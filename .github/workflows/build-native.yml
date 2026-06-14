@@ -34,12 +34,15 @@ jobs:
           - os: ubuntu-latest
             target: linux-amd64
             bin: gcl
+            vsceTarget: linux-x64
           - os: macos-14            # Apple Silicon (arm64)
             target: macos-arm64
             bin: gcl
+            vsceTarget: darwin-arm64
           - os: windows-latest
             target: windows-amd64
             bin: gcl.exe
+            vsceTarget: win32-x64
 
     steps:
       - uses: actions/checkout@v6
@@ -94,15 +97,46 @@ jobs:
             echo "asset=out/${NAME}.tar.gz" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Upload artifact
+      - name: Upload binary artifact
         uses: actions/upload-artifact@v7
         with:
           name: gcl-${{ matrix.target }}
           path: ${{ steps.package.outputs.asset }}
           if-no-files-found: error
 
+      # --- Package the platform-specific VS Code extension (.vsix) ---
+      # Each runner bundles its own native binary into a VSIX tagged with the
+      # matching VS Code target, so the Marketplace can serve the right one.
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Build VSIX
+        shell: bash
+        working-directory: gcl-vscode
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          mkdir -p bin
+          cp "../gcl/dist/${{ matrix.bin }}" "bin/${{ matrix.bin }}"
+          pnpm run compile
+          pnpm exec vsce package \
+            --target "${{ matrix.vsceTarget }}" \
+            --skip-license --no-dependencies \
+            -o "gcl-vscode-${{ matrix.vsceTarget }}.vsix"
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: gcl-vscode-${{ matrix.vsceTarget }}
+          path: gcl-vscode/gcl-vscode-${{ matrix.vsceTarget }}.vsix
+          if-no-files-found: error
+
       - name: Attach to release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ steps.package.outputs.asset }}
+          files: |
+            ${{ steps.package.outputs.asset }}
+            gcl-vscode/gcl-vscode-${{ matrix.vsceTarget }}.vsix

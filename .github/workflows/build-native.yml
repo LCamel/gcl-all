@@ -42,7 +42,7 @@ jobs:
             bin: gcl.exe
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Provides `stack`. We deliberately let stack manage GHC itself (below)
       # rather than pinning a GHC here: stack.yaml uses resolver lts-23.28
@@ -56,7 +56,7 @@ jobs:
           stack-version: 'latest'
 
       - name: Cache Stack
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ${{ steps.setup.outputs.stack-root }}
@@ -95,7 +95,7 @@ jobs:
           fi
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: gcl-${{ matrix.target }}
           path: ${{ steps.package.outputs.asset }}

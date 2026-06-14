@@ -1,0 +1,108 @@
+# Native (non-Docker) build of the `gcl` Haskell LSP binary for the three
+# platforms the VS Code extension needs to ship:
+#
+#   build (linux-amd64)   ─┐
+#   build (macos-arm64)   ─┼── upload one binary artifact per platform
+#   build (windows-amd64) ─┘   (+ attach to a GitHub Release on a v* tag)
+#
+# Modeled on gcl/vendor/haskell-native/.github/workflows/build.yml and the
+# existing gcl/.github/workflows/test-*.yaml, consolidated into one matrix.
+name: Build native
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['native-build']
+    tags: ['v*']
+
+# Needed so a tag build can attach assets to a GitHub Release.
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-amd64
+            bin: gcl
+          - os: macos-14            # Apple Silicon (arm64)
+            target: macos-arm64
+            bin: gcl
+          - os: windows-latest
+            target: windows-amd64
+            bin: gcl.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Provides `stack`. We deliberately let stack manage GHC itself (below)
+      # rather than pinning a GHC here: stack.yaml uses resolver lts-23.28
+      # (GHC 9.8.4) and a stack-installed GHC ships the C toolchain that
+      # native deps (sbv, libBF) need — most reliable across all 3 OSes.
+      - name: Set up Stack
+        id: setup
+        uses: haskell-actions/setup@v2
+        with:
+          enable-stack: true
+          stack-version: 'latest'
+
+      - name: Cache Stack
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ steps.setup.outputs.stack-root }}
+            gcl/.stack-work
+          key: ${{ runner.os }}-stack-${{ hashFiles('gcl/stack.yaml.lock', 'gcl/package.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-stack-
+
+      # Build ONLY the `gcl` executable (its library dependency comes along).
+      # Targeting the exe component on purpose skips the test suite, which
+      # stack.yaml would otherwise compile/run (`build.test: true`) and which
+      # has known-failing cases (see gcl/failed_test_cases.md).
+      # --no-system-ghc --install-ghc: ignore any GHC on PATH and let stack
+      # install the resolver's GHC (with its bundled toolchain).
+      # --copy-bins --local-bin-path dist: drop the binary into gcl/dist.
+      - name: Build gcl executable
+        working-directory: gcl
+        run: stack build gcl:exe:gcl --no-system-ghc --install-ghc --copy-bins --local-bin-path dist
+
+      - name: Package
+        id: package
+        shell: bash
+        run: |
+          BIN="${{ matrix.bin }}"
+          NAME="gcl-${{ matrix.target }}"
+          mkdir -p out
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cp "gcl/dist/${BIN}" "${NAME}.exe"
+            7z a "out/${NAME}.zip" "${NAME}.exe"
+            echo "asset=out/${NAME}.zip" >> "$GITHUB_OUTPUT"
+          else
+            cp "gcl/dist/${BIN}" "${NAME}"
+            chmod +x "${NAME}"
+            tar -czf "out/${NAME}.tar.gz" "${NAME}"
+            echo "asset=out/${NAME}.tar.gz" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcl-${{ matrix.target }}
+          path: ${{ steps.package.outputs.asset }}
+          if-no-files-found: error
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.package.outputs.asset }}

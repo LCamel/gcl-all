@@ -8,8 +8,10 @@
 name: Build and Push
 
 on:
-  push:
-    branches: ['main']
+  # Auto-build on push to main is DISABLED during the native-binary experiments
+  # (it competes for runner minutes). Restore by un-commenting the lines below.
+  #   push:
+  #     branches: ['main']
   workflow_dispatch:
 
 concurrency:

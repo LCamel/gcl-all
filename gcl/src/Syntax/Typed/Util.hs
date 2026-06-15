@@ -11,6 +11,7 @@ import Render (Render (render))
 import Syntax.Abstract.Types (TBase (TBool), Type (..))
 import qualified Syntax.Abstract.Types as A
 import Syntax.Common (Name (..), nameToText)
+import Syntax.Common.Types (TypeOp (..))
 import Syntax.Typed
 
 getGuards :: [GdCmd] -> [Expr]
@@ -42,7 +43,7 @@ typeOf (Const _ t _) = t
 typeOf (Op _ t) = t
 typeOf (Chain ch) = typeOfChain ch
 typeOf (App e0 _ _) = case typeOf e0 of
-  A.TFunc _ t _ -> t
+  A.TApp (A.TApp (A.TOp (Arrow _)) _t1 _) t2 _ -> t2
   _ -> error "left term not having function type in a typed expression"
 typeOf (Lam _ t0 e _) = A.TFunc t0 (typeOf e) Nothing
 typeOf (Tuple es) = A.TTuple (map typeOf es)

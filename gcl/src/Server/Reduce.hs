@@ -20,12 +20,13 @@ import Server.Monad
     setFileState,
   )
 import Server.Notification.Update (sendFileState)
+import Syntax.Common.Types (Name)
 import Syntax.Typed.Reduce (Redex, reduce)
 import qualified Syntax.Typed.Types as T
 
 -- TODO: add env for function inline
-evalReduce :: T.Expr -> Redex -> T.Expr
-evalReduce predicate redex = evalState (Syntax.Typed.Reduce.reduce [] predicate redex) (0 :: Int)
+evalReduce :: [(Name, T.Expr)] -> T.Expr -> Redex -> T.Expr
+evalReduce env predicate redex = evalState (Syntax.Typed.Reduce.reduce env predicate redex) (0 :: Int)
 
 reduce :: FilePath -> Int -> Redex -> ServerM ()
 reduce filePath poIndex redex = do
@@ -44,7 +45,7 @@ reduce filePath poIndex redex = do
             let pos = fsProofObligations fs
             let po = pos ^?! element poIndex
             let pred' = poReducedPred po
-            let reducedPred = evalReduce pred' redex
+            let reducedPred = evalReduce (fsDefinitions fs) pred' redex
             let po' = po {poReducedPred = reducedPred}
             let fs' = fs {fsProofObligations = pos & element poIndex .~ po'}
 
@@ -55,3 +56,9 @@ reduce filePath poIndex redex = do
         Right fs' -> do
           setFileState filePath fs'
           sendFileState filePath fs'
+
+collectDefinitions :: T.Program -> [(Name, T.Expr)]
+collectDefinitions (T.Program defns _ _ _ _) = concatMap aux defns
+  where
+    aux T.TypeDefn {} = []
+    aux (T.ValDefn name _ expr) = [(name, expr)]

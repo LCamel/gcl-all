@@ -162,7 +162,7 @@ export async function activate(context: vscode.ExtensionContext) {
   );
   context.subscriptions.push(refineDisposable);
 
-  await start();
+  await start(context);
 
   // restart server command
   const restartDisposable = vscode.commands.registerCommand(
@@ -170,7 +170,7 @@ export async function activate(context: vscode.ExtensionContext) {
     async () => {
       try {
         await stop();
-        await start();
+        await start(context);
         vscode.window.showInformationMessage("GCL server restarted");
       } catch (e: any) {
         vscode.window.showErrorMessage(

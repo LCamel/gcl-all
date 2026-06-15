@@ -1,6 +1,8 @@
 // This module handles connections:
 
 import * as vscode from "vscode";
+import * as fs from "fs";
+import * as path from "path";
 import {
   LanguageClient,
   LanguageClientOptions,
@@ -27,9 +29,41 @@ export async function sendRequest<R>(method: string, param: any): Promise<R> {
   return client.sendRequest(method, param);
 }
 
-export async function start() {
-  const gclConfig = vscode.workspace.getConfiguration("gcl-vscode");
-  const gclPath = gclConfig.get<string>("gclPath") ?? "gcl";
+/**
+ * Resolves the path to the `gcl` LSP executable:
+ *   1. An explicit `gcl-vscode.gclPath` setting wins (power users / dev builds).
+ *   2. Otherwise the binary bundled in the platform-specific VSIX (bin/gcl).
+ *   3. Otherwise fall back to `gcl` on PATH.
+ */
+function resolveGclPath(context: vscode.ExtensionContext): string {
+  const configured = vscode.workspace
+    .getConfiguration("gcl-vscode")
+    .get<string>("gclPath")
+    ?.trim();
+  if (configured) return configured;
+
+  const bundled = path.join(
+    context.extensionPath,
+    "bin",
+    process.platform === "win32" ? "gcl.exe" : "gcl",
+  );
+  if (fs.existsSync(bundled)) {
+    // Packaging into a VSIX can drop the executable bit; restore it.
+    if (process.platform !== "win32") {
+      try {
+        fs.chmodSync(bundled, 0o755);
+      } catch {
+        // best-effort: a spawn error later will surface the real problem
+      }
+    }
+    return bundled;
+  }
+
+  return "gcl";
+}
+
+export async function start(context: vscode.ExtensionContext) {
+  const gclPath = resolveGclPath(context);
 
   const serverOptions: ServerOptions = {
     // TODO: Temporarily enable logging in both run and debug modes

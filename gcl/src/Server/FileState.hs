@@ -8,6 +8,8 @@ import GCL.WP.Types (StructWarning)
 import qualified Language.LSP.Protocol.Types as LSP
 import Server.GoToDefn (OriginTargetRanges)
 import Server.IntervalMap (IntervalMap)
+import Syntax.Common.Types (Name)
+import qualified Syntax.Typed.Types as T
 
 data FileState = FileState
   { fsErrors :: ![Error],
@@ -19,7 +21,8 @@ data FileState = FileState
     fsIdCount :: !Int,
     fsSemanticTokens :: ![LSP.SemanticTokenAbsolute],
     fsDefinitionLinks :: !(IntervalMap OriginTargetRanges),
-    fsHoverInfos :: !(IntervalMap LSP.Hover)
+    fsHoverInfos :: !(IntervalMap LSP.Hover),
+    fsDefinitions :: ![(Name, T.Expr)]
   }
 
 emptyFileStateWithErrors :: [Error] -> FileState
@@ -34,7 +37,8 @@ emptyFileStateWithErrors errs =
       fsIdCount = 0,
       fsSemanticTokens = [],
       fsDefinitionLinks = mempty,
-      fsHoverInfos = mempty
+      fsHoverInfos = mempty,
+      fsDefinitions = []
     }
 
 data PendingEdit = PendingEdit

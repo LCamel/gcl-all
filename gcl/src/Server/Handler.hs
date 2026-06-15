@@ -32,6 +32,7 @@ import Language.LSP.Server
 import qualified Server.Handler.AutoCompletion as AutoCompletion
 import qualified Server.Handler.GCL.Debug as Debug
 import qualified Server.Handler.GCL.Load as Load
+import qualified Server.Handler.GCL.Reduce as Reduce
 import qualified Server.Handler.GCL.Refine as Refine
 import qualified Server.Handler.GoToDefinition as GoToDefinition
 import qualified Server.Handler.Hover as Hover
@@ -120,7 +121,9 @@ handlers =
       -- "gcl/refine" - refine
       requestHandler (LSP.SMethod_CustomMethod (Proxy @"gcl/refine")) $ customRequestMiddleware Refine.handler,
       -- "gcl/debug" - debug FileState
-      requestHandler (LSP.SMethod_CustomMethod (Proxy @"gcl/debug")) $ customRequestMiddleware Debug.handler
+      requestHandler (LSP.SMethod_CustomMethod (Proxy @"gcl/debug")) $ customRequestMiddleware Debug.handler,
+      -- "gcl/reduce"
+      requestHandler (LSP.SMethod_CustomMethod (Proxy @"gcl/reduce")) $ customRequestMiddleware Reduce.handler
     ]
 
 -- Extracts the common boilerplate shared by custom LSP request handlers.

@@ -75,6 +75,7 @@ data Hole = Hole
 -- | Client-side ProofObligation type (matches TypeScript IProofObligation)
 data ProofObligation = ProofObligation
   { pred :: Text.Text, -- HTML (with data-redex), see renderPredHtml
+    reducedPred :: Text.Text,
     hash :: String,
     proofLocation :: Maybe LSP.Range,
     origin :: POOrigin
@@ -135,9 +136,10 @@ convertHole (GCL.Hole {GCL.holeID, GCL.holeType, GCL.holeRange}) =
 
 -- | Convert server-side PO to client-side ProofObligation
 convertPO :: Int -> GCL.PO -> ProofObligation
-convertPO poIndex (GCL.PO {GCL.poPred, GCL.poAnchorHash, GCL.poAnchorRange, GCL.poOrigin}) =
+convertPO poIndex (GCL.PO {GCL.poPred, GCL.poReducedPred, GCL.poAnchorHash, GCL.poAnchorRange, GCL.poOrigin}) =
   ProofObligation
     { pred = renderPredHtml poIndex poPred,
+      reducedPred = renderPredHtml poIndex poReducedPred,
       hash = Text.unpack poAnchorHash,
       proofLocation = fmap toLSPRange poAnchorRange,
       origin = convertOrigin poOrigin

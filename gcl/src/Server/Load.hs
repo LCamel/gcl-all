@@ -22,6 +22,7 @@ import Server.Hover (collectHoverInfo)
 import Server.Monad (FileState (..), HoleKind (..), PendingEdit (..), ServerM, emptyFileStateWithErrors, getPendingEdit, logText, logTextLn, readSourceAndVersion, sendEditTextsWithVersion, sendWindowInfoMessage, setPendingEdit)
 import Server.Notification.Update (setAndSendFileState, setAndSendFileStateWithRefresh)
 import Server.OrigCoord (convertError, prepareEdits)
+import Server.Reduce (collectDefinitions)
 import qualified Syntax.Concrete as C
 import qualified Syntax.Concrete.Instances.ToAbstract as C
 import Syntax.Concrete.Types (GdCmd (..), SepBy (..))
@@ -119,7 +120,8 @@ loadConcrete concrete = do
         fsTIState = state,
         fsSemanticTokens = collectHighlighting concrete,
         fsDefinitionLinks = collectLocationLinks abstract,
-        fsHoverInfos = collectHoverInfo elaborated
+        fsHoverInfos = collectHoverInfo elaborated,
+        fsDefinitions = collectDefinitions elaborated
       }
 
 -- | Parse source, and if holes are found, dig them and re-parse.

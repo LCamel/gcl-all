@@ -1,9 +1,8 @@
-.clickable {
+.gcl-redex {
   cursor: pointer;
   color: var(--vscode-textLink-foreground);
-  text-decoration: underline;
 }
 
-.clickable:hover:not(:has(.clickable:hover)) {
+.gcl-redex:hover:not(:has(.gcl-redex:hover)) {
   color: white;
 }

@@ -1,16 +1,24 @@
 const vscode = acquireVsCodeApi();
-const buttons = document.querySelectorAll(".clickable");
 
-function handleClick(event) {
+/**
+ * @type {EventListener}
+ */
+function handleReduce(event) {
   event.stopPropagation();
 
-  const id = event.target.dataset.redexId;
+  const el = event.target;
+
+  const redex = el.dataset.redex.split(",").map(Number);
+  const po = Number(el.closest(".gcl-expr").dataset.po);
 
   vscode.postMessage({
-    id: id,
+    po,
+    redex,
   });
 }
 
-for (const btn of buttons) {
-  btn.addEventListener("click", handleClick);
+const redexes = document.querySelectorAll(".gcl-redex");
+
+for (const redex of redexes) {
+  redex.addEventListener("click", handleReduce);
 }

@@ -98,6 +98,7 @@ export async function activate(context: vscode.ExtensionContext) {
   // When switching tabs to a .gcl file, display the corresponding state in gclPanel
   const changeTabDisposable = vscode.window.tabGroups.onDidChangeTabs(
     (event: vscode.TabChangeEvent) => {
+      if (event.changed.length < 1) return;
       const changedTab: vscode.Tab = event.changed[0];
       const isFileTab: boolean = "uri" in (changedTab.input as any);
       if (isFileTab) {
@@ -205,16 +206,6 @@ export async function activate(context: vscode.ExtensionContext) {
       );
       outputChannel.appendLine(JSON.stringify({ specs }, null, 2));
 
-      for (const po of pos) {
-        po.click = `
-          <span class="clickable" data-redex-id="outer">
-            outer
-            <span class="clickable" data-redex-id="inner">inner text</span>
-            text
-          </span>
-        `;
-      }
-
       let newClientFileState: ClientFileState = {
         errors,
         holes,
@@ -235,8 +226,11 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(updateNotificationHandlerDisposable);
 
   gclPanel.panel.webview.onDidReceiveMessage(
-    (msg) => {
-      console.log(msg);
+    async (reduceParams) => {
+      executeOnGclEditor(async (editor) => {
+        const filePath = editor?.document.uri.fsPath;
+        const _response = await sendRequest("gcl/reduce", { filePath, ...reduceParams })
+      });
     },
     undefined,
     context.subscriptions,

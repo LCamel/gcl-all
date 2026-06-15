@@ -17,9 +17,8 @@ import Server.Monad
     getPendingEdit,
     logTextLn,
     sendWindowInfoMessage,
-    setFileState,
   )
-import Server.Notification.Update (sendFileState)
+import Server.Notification.Update (setAndSendFileState)
 import Syntax.Common.Types (Name)
 import Syntax.Typed.Reduce (Redex, reduce)
 import qualified Syntax.Typed.Types as T
@@ -54,8 +53,7 @@ reduce filePath poIndex redex = do
       case result of
         Left errs -> sendWindowInfoMessage (Text.intercalate "\n" $ map (renderStrict . layoutCompact . pretty) errs)
         Right fs' -> do
-          setFileState filePath fs'
-          sendFileState filePath fs'
+          setAndSendFileState filePath fs'
 
 collectDefinitions :: T.Program -> [(Name, T.Expr)]
 collectDefinitions (T.Program defns _ _ _ _) = concatMap aux defns

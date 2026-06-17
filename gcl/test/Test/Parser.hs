@@ -359,7 +359,7 @@ parseError =
   where
     runDeclaration = parserCompare Parser.declaration
     -- runType        = parserCompare pType
-    runExpr = parserCompare Parser.expression
+    -- runExpr = parserCompare Parser.expression
 
 --------------------------------------------------------------------------------
 

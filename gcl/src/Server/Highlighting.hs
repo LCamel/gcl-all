@@ -139,7 +139,7 @@ instance Collect () Highlighting Stmt where
   collect = \case
     Skip x -> addHighlighting J.SemanticTokenTypes_Keyword [] x
     Abort x -> addHighlighting J.SemanticTokenTypes_Keyword [] x
-    Assign as tok bs -> do
+    Assign _as tok bs -> do
       -- collect (fmap AsVariable as)
       addHighlighting J.SemanticTokenTypes_Keyword [] tok
       collect bs

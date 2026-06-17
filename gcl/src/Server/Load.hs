@@ -4,7 +4,6 @@
 module Server.Load where
 
 import Data.Bifunctor (first)
-import Data.Either (rights)
 import qualified Data.IntMap as IntMap
 import Data.List (sortBy)
 import Data.Ord (comparing)

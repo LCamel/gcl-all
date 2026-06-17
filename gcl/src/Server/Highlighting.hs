@@ -11,7 +11,6 @@ module Server.Highlighting
 where
 
 import Control.Monad.RWS
-import Data.Either (lefts)
 import Data.Foldable (toList)
 import GCL.Range
   ( MaybeRanged (maybeRangeOf),

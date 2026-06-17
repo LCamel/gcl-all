@@ -2,10 +2,10 @@ module Syntax.Typed.Reduce where
 
 import Control.Arrow ((***))
 import GCL.Common (Fresh (..))
-import Syntax.Abstract.Types (Lit (..), Pattern (..))
-import Syntax.Common.Types (Name, Op, TypeOp, nameToText)
+import Syntax.Abstract.Types (Pattern (..))
+import Syntax.Common.Types (Name, nameToText)
 import Syntax.Substitution
-import Syntax.Typed.Instances.Substitution
+import Syntax.Typed.Instances.Substitution ()
 import Syntax.Typed.Types
 
 type Redex = [Int] -- path to a redex

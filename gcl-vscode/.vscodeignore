@@ -4,3 +4,6 @@
 !README.md
 !out/**
 !media/**
+!syntaxes/**
+!language-configuration.json
+!bin/**

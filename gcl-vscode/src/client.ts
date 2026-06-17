@@ -1,6 +1,8 @@
 // This module handles connections:
 
 import * as vscode from "vscode";
+import * as fs from "fs";
+import * as path from "path";
 import {
   LanguageClient,
   LanguageClientOptions,
@@ -11,6 +13,7 @@ import {
 import { FileStateNotification } from "./data/ClientState";
 
 let client: LanguageClient | undefined;
+let extensionContext: vscode.ExtensionContext | undefined;
 
 export async function stop() {
   if (client && client.needsStop()) {
@@ -38,9 +41,43 @@ export async function sendRequest<R>(method: string, param: any): Promise<R> {
   return client.sendRequest(method, param);
 }
 
+/**
+ * Resolves the path to the `gcl` LSP executable:
+ *   1. An explicit `gcl-vscode.gclPath` setting wins (power users / dev builds).
+ *   2. Otherwise the binary bundled in the platform-specific VSIX (bin/gcl).
+ *   3. Otherwise fall back to `gcl` on PATH.
+ */
+function resolveGclPath(context: vscode.ExtensionContext | undefined): string {
+  const configured = vscode.workspace
+    .getConfiguration("gcl-vscode")
+    .get<string>("gclPath")
+    ?.trim();
+  if (configured) return configured;
+
+  if (context) {
+    const bundled = path.join(
+      context.extensionPath,
+      "bin",
+      process.platform === "win32" ? "gcl.exe" : "gcl",
+    );
+    if (fs.existsSync(bundled)) {
+      // Packaging into a VSIX can drop the executable bit; restore it.
+      if (process.platform !== "win32") {
+        try {
+          fs.chmodSync(bundled, 0o755);
+        } catch {
+          // best-effort: a spawn error later will surface the real problem
+        }
+      }
+      return bundled;
+    }
+  }
+
+  return "gcl";
+}
+
 function createClient(): LanguageClient {
-  const gclConfig = vscode.workspace.getConfiguration("gcl-vscode");
-  const gclPath = gclConfig.get<string>("gclPath") ?? "gcl";
+  const gclPath = resolveGclPath(extensionContext);
 
   const serverOptions: ServerOptions = {
     // TODO: Temporarily enable logging in both run and debug modes
@@ -77,7 +114,8 @@ function createClient(): LanguageClient {
   );
 }
 
-export async function start() {
+export async function start(context?: vscode.ExtensionContext) {
+  if (context) extensionContext = context;
   if (!client) client = createClient();
   await client.start();
 }

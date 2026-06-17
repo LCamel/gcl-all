@@ -1,0 +1,166 @@
+# Native (non-Docker) build of the `gcl` Haskell LSP binary for the four
+# platforms the VS Code extension needs to ship:
+#
+#   build (linux-amd64)   ─┐
+#   build (linux-arm64)   ─┤
+#   build (macos-arm64)   ─┼── upload one binary + one VSIX artifact per platform
+#   build (windows-amd64) ─┘                │
+#                                           └─▶ release (v* tag only): gh release + assets
+#
+# Modeled on the existing gcl/.github/workflows/test-*.yaml, consolidated
+# into a single cross-platform matrix.
+name: Build native
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+# Least privilege at the top level; only the release job escalates to write.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-amd64
+            bin: gcl
+            vsceTarget: linux-x64
+          - os: ubuntu-24.04-arm    # Linux on ARM (aarch64)
+            target: linux-arm64
+            bin: gcl
+            vsceTarget: linux-arm64
+          - os: macos-14            # Apple Silicon (arm64)
+            target: macos-arm64
+            bin: gcl
+            vsceTarget: darwin-arm64
+          - os: windows-latest
+            target: windows-amd64
+            bin: gcl.exe
+            vsceTarget: win32-x64
+
+    steps:
+      - uses: actions/checkout@v6
+
+      # Provides `stack`. We deliberately let stack manage GHC itself (below)
+      # rather than pinning a GHC here: stack.yaml uses resolver lts-23.28
+      # (GHC 9.8.4) and a stack-installed GHC ships the C toolchain that
+      # native deps (sbv, libBF) need — most reliable across all four OSes.
+      - name: Set up Stack
+        uses: haskell-actions/setup@v2
+        with:
+          enable-stack: true
+          stack-version: 'latest'
+
+      # No dependency cache on purpose. This workflow only runs on v* tags (and
+      # manual dispatch); Actions caches are ref-scoped, so one tag's run cannot
+      # read another tag's cache — the cache would never be reused, only consume
+      # the repo's shared 10 GB budget and compete with the frequent Docker
+      # workflow's cache. A cold (~20-min) build per release is acceptable.
+
+      # Build ONLY the `gcl` executable (its library dependency comes along).
+      # Targeting the exe component on purpose skips the test suite, which
+      # stack.yaml would otherwise compile/run (`build.test: true`) and which
+      # has known-failing cases (see gcl/failed_test_cases.md).
+      # --no-system-ghc --install-ghc: ignore any GHC on PATH and let stack
+      # install the resolver's GHC (with its bundled toolchain).
+      # --copy-bins --local-bin-path dist: drop the binary into gcl/dist.
+      - name: Build gcl executable
+        working-directory: gcl
+        run: stack build gcl:exe:gcl --no-system-ghc --install-ghc --copy-bins --local-bin-path dist
+
+      - name: Package
+        id: package
+        shell: bash
+        run: |
+          BIN="${{ matrix.bin }}"
+          NAME="gcl-${{ matrix.target }}"
+          mkdir -p out
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            cp "gcl/dist/${BIN}" "${NAME}.exe"
+            7z a "out/${NAME}.zip" "${NAME}.exe"
+            echo "asset=out/${NAME}.zip" >> "$GITHUB_OUTPUT"
+          else
+            cp "gcl/dist/${BIN}" "${NAME}"
+            chmod +x "${NAME}"
+            tar -czf "out/${NAME}.tar.gz" "${NAME}"
+            echo "asset=out/${NAME}.tar.gz" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: gcl-${{ matrix.target }}
+          path: ${{ steps.package.outputs.asset }}
+          if-no-files-found: error
+
+      # --- Package the platform-specific VS Code extension (.vsix) ---
+      # Each runner bundles its own native binary into a VSIX tagged with the
+      # matching VS Code target, so the Marketplace can serve the right one.
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Build VSIX
+        shell: bash
+        working-directory: gcl-vscode
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+          mkdir -p bin
+          cp "../gcl/dist/${{ matrix.bin }}" "bin/${{ matrix.bin }}"
+          pnpm run compile
+          pnpm exec vsce package \
+            --target "${{ matrix.vsceTarget }}" \
+            --skip-license --no-dependencies \
+            -o "gcl-vscode-${{ matrix.vsceTarget }}.vsix"
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: gcl-vscode-${{ matrix.vsceTarget }}
+          path: gcl-vscode/gcl-vscode-${{ matrix.vsceTarget }}.vsix
+          if-no-files-found: error
+
+  # Runs once, only on a v* tag, after all three build jobs succeed. Collects
+  # every artifact and publishes them to the tag's GitHub Release using the
+  # runner's built-in `gh` CLI (no third-party release action).
+  release:
+    name: Publish GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      # --repo is required because this job does not check out the repo.
+      # Idempotent: create the release if absent, otherwise upload/overwrite
+      # assets onto the existing one (so re-running a tag build doesn't fail).
+      - name: Publish release with assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="$GITHUB_REF_NAME"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag" --repo "$GITHUB_REPOSITORY" --clobber dist/*
+          else
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY" \
+              --title "$tag" --generate-notes dist/*
+          fi

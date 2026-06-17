@@ -78,8 +78,8 @@
         "properties": {
           "gcl-vscode.gclPath": {
             "type": "string",
-            "default": "gcl",
-            "description": "Location of the `gcl` LSP executable"
+            "default": "",
+            "description": "Path to the `gcl` LSP executable. Leave empty to use the binary bundled with the extension; set a path to override (e.g. a locally built `gcl`)."
           },
           "gcl-vscode.trace.server": {
             "type": "string",

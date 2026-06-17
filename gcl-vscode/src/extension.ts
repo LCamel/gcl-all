@@ -164,7 +164,7 @@ export async function activate(context: vscode.ExtensionContext) {
   );
   context.subscriptions.push(refineDisposable);
 
-  await start();
+  await start(context);
 
   // restart server command
   const restartDisposable = vscode.commands.registerCommand(

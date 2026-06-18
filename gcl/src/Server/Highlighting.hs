@@ -11,6 +11,7 @@ module Server.Highlighting
 where
 
 import Control.Monad.RWS
+import Data.Either (partitionEithers)
 import Data.Foldable (toList)
 import GCL.Range
   ( MaybeRanged (maybeRangeOf),
@@ -29,7 +30,6 @@ import Server.IntervalMap
 import qualified Server.IntervalMap as IntervalMap
 import Syntax.Common
 import Syntax.Concrete
-import Data.Either (partitionEithers)
 
 type Highlighting = J.SemanticTokenAbsolute
 

@@ -29,6 +29,7 @@ import Server.IntervalMap
 import qualified Server.IntervalMap as IntervalMap
 import Syntax.Common
 import Syntax.Concrete
+import Data.Either (partitionEithers)
 
 type Highlighting = J.SemanticTokenAbsolute
 
@@ -139,8 +140,10 @@ instance Collect () Highlighting Stmt where
   collect = \case
     Skip x -> addHighlighting J.SemanticTokenTypes_Keyword [] x
     Abort x -> addHighlighting J.SemanticTokenTypes_Keyword [] x
-    Assign _as tok bs -> do
-      -- collect (fmap AsVariable as)
+    Assign as tok bs -> do
+      let (names, holes) = partitionEithers $ toList as
+      collect (fmap AsVariable names)
+      collect holes
       addHighlighting J.SemanticTokenTypes_Keyword [] tok
       collect bs
     AAssign a _ b _ tok c -> do

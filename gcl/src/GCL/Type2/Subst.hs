@@ -64,7 +64,7 @@ applySubstExpr subst (T.Quant op args cond expr range) = T.Quant (applySubstExpr
 applySubstExpr subst (T.ArrIdx arr index range) = T.ArrIdx (applySubstExpr subst arr) (applySubstExpr subst index) range
 applySubstExpr subst (T.ArrUpd arr index expr range) = T.ArrUpd (applySubstExpr subst arr) (applySubstExpr subst index) (applySubstExpr subst expr) range
 applySubstExpr subst (T.Case expr clauses range) = T.Case (applySubstExpr subst expr) (map (applySubstClause subst) clauses) range
-applySubstExpr subst (T.Subst _ _) = undefined
+applySubstExpr _subst (T.Subst _ _) = undefined
 applySubstExpr subst (T.EHole h) = T.EHole $ applySubstHole subst h
 
 applySubstChain :: Subst -> T.Chain -> T.Chain

@@ -36,7 +36,7 @@ simpleLoad filepath source = runExceptT $ catchError run handler
       abstract' <- ExceptT $ toDeps abstract
       -- lift $ print abstract
       -- typed <- ExceptT $ typecheck abstract
-      typed2 <- ExceptT $ toTyped2 abstract'
+      _ <- ExceptT $ toTyped2 abstract'
       -- lift $ print typed
       return ()
     handler err =

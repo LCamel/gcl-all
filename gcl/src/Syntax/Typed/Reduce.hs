@@ -2,10 +2,10 @@ module Syntax.Typed.Reduce where
 
 import Control.Arrow ((***))
 import GCL.Common (Fresh (..))
-import Syntax.Abstract.Types (Lit (..), Pattern (..))
-import Syntax.Common.Types (Name, Op, TypeOp, nameToText)
+import Syntax.Abstract.Types (Pattern (..))
+import Syntax.Common.Types (Name, nameToText)
 import Syntax.Substitution
-import Syntax.Typed.Instances.Substitution
+import Syntax.Typed.Instances.Substitution ()
 import Syntax.Typed.Types
 
 type Redex = [Int] -- path to a redex
@@ -20,7 +20,7 @@ redexes (App f@(Lam _ _ _ _) e _) =
   []
     : map (0 :) (redexes f)
     ++ map (1 :) (redexes e)
-redexes (App f@(Var _ _ _) e _) = [] : map (1 :) (redexes e)
+redexes (App (Var _ _ _) e _) = [] : map (1 :) (redexes e)
 redexes (App f e _) = map (0 :) (redexes f) ++ map (1 :) (redexes e)
 redexes (Lam _ _ e _) = map (0 :) (redexes e)
 redexes (Tuple es) = redexesExprs 0 es
@@ -59,7 +59,7 @@ redexRT (Const _ _ _) = leaf
 redexRT (Op _ _) = leaf
 redexRT (Chain ch) = Node False (redexRTChain ch)
 redexRT (App f@(Lam _ _ _ _) e _) = Node True [redexRT f, redexRT e]
-redexRT (App f@(Var _ _ _) e _) = Node True [leaf, redexRT e]
+redexRT (App (Var _ _ _) e _) = Node True [leaf, redexRT e]
 redexRT (App f e _) = Node False [redexRT f, redexRT e]
 redexRT (Lam _ _ e _) = Node False [redexRT e]
 redexRT (Tuple es) = Node False (map redexRT es)
@@ -104,7 +104,7 @@ type Env = [(Name, Expr)]
 
 reduce :: (Fresh m) => Env -> Expr -> Redex -> m Expr
 reduce env (Chain ch) (i : p) = Chain <$> reduceChain env ch i p
-reduce env (App (Lam x _ bdy _) e _) [] = betaReduce x bdy e
+reduce _env (App (Lam x _ bdy _) e _) [] = betaReduce x bdy e
 reduce env exp@(App (Var f _ _) e r) [] =
   maybe
     (return exp)
@@ -114,7 +114,7 @@ reduce env (App f e r) (0 : p) = App <$> reduce env f p <*> pure e <*> pure r
 reduce env (App f e r) (1 : p) = App f <$> reduce env e p <*> pure r
 reduce env (Lam x t e r) (0 : p) = Lam x t <$> reduce env e p <*> pure r
 reduce env (Tuple es) (n : p) = Tuple <$> reduceNth env n es p
-reduce env (OutT i (Tuple es)) [] = return (es !! i)
+reduce _env (OutT i (Tuple es)) [] = return (es !! i)
 reduce env (OutT i e) (0 : p) = OutT i <$> reduce env e p
 reduce env (Quant op xs ran bdy r) (0 : p) =
   Quant op xs <$> reduce env ran p <*> pure bdy <*> pure r
@@ -137,7 +137,7 @@ reduce env (Case e cls r) (n : p) =
   where
     getPattern (CaseClause p _) = p
     getClause (CaseClause _ e) = e
-reduce env (Subst e sb) [] = subst (map (nameToText *** id) sb) e
+reduce _env (Subst e sb) [] = subst (map (nameToText *** id) sb) e
 reduce env (Subst e sb) (0 : p) = Subst <$> reduce env e p <*> pure sb
 reduce env (Subst e sb) (n : p) =
   (Subst e . zip (map fst sb))
@@ -160,7 +160,7 @@ reduceChain env (More ch op t e) i p =
 reduceChain _ _ _ _ = error "shouldn't happen (reduceChain)"
 
 reduceCase :: (Fresh m) => Env -> Expr -> [CaseClause] -> m (Maybe Expr)
-reduceCase env e [] = return Nothing
+reduceCase _env _e [] = return Nothing
 reduceCase env e (CaseClause ptn rhs : cls) = do
   case matchPattern e ptn of
     Just subs -> Just <$> subst subs rhs

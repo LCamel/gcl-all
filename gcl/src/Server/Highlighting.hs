@@ -11,7 +11,6 @@ module Server.Highlighting
 where
 
 import Control.Monad.RWS
-import Data.Either (lefts)
 import Data.Foldable (toList)
 import GCL.Range
   ( MaybeRanged (maybeRangeOf),
@@ -140,7 +139,7 @@ instance Collect () Highlighting Stmt where
   collect = \case
     Skip x -> addHighlighting J.SemanticTokenTypes_Keyword [] x
     Abort x -> addHighlighting J.SemanticTokenTypes_Keyword [] x
-    Assign as tok bs -> do
+    Assign _as tok bs -> do
       -- collect (fmap AsVariable as)
       addHighlighting J.SemanticTokenTypes_Keyword [] tok
       collect bs

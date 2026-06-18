@@ -88,8 +88,8 @@ instance Collect Typed.TypeDefnCtor where
   collect (Typed.TypeDefnCtor _name _tys) = mempty
 
 instance Collect Typed.KindedType where
-  collect (Typed.TBase base kind loc) = annotateKind loc kind
-  collect (Typed.TArray int kinded loc) = collect kinded
+  collect (Typed.TBase _base kind loc) = annotateKind loc kind
+  collect (Typed.TArray _int kinded _loc) = collect kinded
   collect (Typed.TTuple ts) = collect ts
   collect (Typed.TFunc l r _) = collect l <> collect r
   collect (Typed.TOp op kind) = annotateKind op kind

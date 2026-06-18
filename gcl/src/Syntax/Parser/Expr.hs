@@ -155,23 +155,6 @@ expression = do
         helper a [] = a
         helper a ((o, x, c) : xs) = helper (Arr a o x c) xs
 
-    chainOp :: Parser ChainOp
-    chainOp =
-      choice
-        [ EQProp . Just <$> symbol TokEQProp,
-          EQPropU . Just <$> symbol TokEQPropU,
-          EQ . Just <$> symbol TokEQ,
-          NEQ . Just <$> symbol TokNEQ,
-          NEQU . Just <$> symbol TokNEQU,
-          LTE . Just <$> symbol TokLTE,
-          LTEU . Just <$> symbol TokLTEU,
-          GTE . Just <$> symbol TokGTE,
-          GTEU . Just <$> symbol TokGTEU,
-          LT . Just <$> symbol TokLT,
-          GT . Just <$> symbol TokGT
-        ]
-        <?> "chain operator"
-
     arithOp :: Parser ArithOp
     arithOp =
       choice

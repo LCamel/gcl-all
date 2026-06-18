@@ -4,7 +4,6 @@
 module Server.Handler.GCL.Reduce where
 
 import qualified Data.Aeson.Types as JSON
-import Debug.Trace
 import GHC.Generics (Generic)
 import Server.Monad (ServerM)
 import Server.Reduce (reduce)

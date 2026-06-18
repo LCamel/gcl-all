@@ -93,6 +93,25 @@ programToScopeForSubstitution (Program defns decls _ _ _) =
 syntaxSubst :: [Name] -> [Expr] -> Expr -> Expr
 syntaxSubst xs es e = Subst e (zip xs es)
 
+{-
+  Since we allow holes in the LHS of assignments:
+
+    { }₀ := e
+
+  the induced substitution might have a hole as a denominator.
+  However, substitutions are currently represented by [(Name, Expr)]
+  where Names is just Text with a location.
+
+  The hack below simply "prints" the hole into a piece of Text,
+  e.g, a Text containing "{ }₀",and stores it into the substitution.
+
+  The substitution certainly will not function correctly when an
+  EHole representing { }₀ appears in an expression. However, this is
+  probably okay for now, since { }₀ does not have a name, cannot
+  be referred, and therefore probably won't appear in any pre/post
+  conditions. Fix this if it turns out to be otherwise.
+-}
+
 syntaxSubst' :: [Either Name Hole] -> [Expr] -> Expr -> Expr
 syntaxSubst' xs es e = Subst e (zip (map nameOf xs) es)
 

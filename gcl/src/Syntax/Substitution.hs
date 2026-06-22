@@ -86,10 +86,13 @@ substBinder sb binders body = do
 
 shrinkSubst :: [Name] -> Set Text -> Subst b -> Subst b
 shrinkSubst binders ns subs =
-  restrictKeys (substractKeys subs (map nameToText binders)) ns
+  restrictKeys (substractSubDomain subs binders) ns
+
+substractSubDomain :: Subst b -> [Name] -> Subst b
+substractSubDomain sb bs =
+  filterWithKey (\k _ -> not (k `elem` bs')) sb
   where
-    substractKeys sb bs =
-      filterWithKey (\k _ -> not (k `elem` bs)) sb
+    bs' = map nameToText bs
 
 genBinderRenaming ::
   (Fresh m, Variableous e t) =>

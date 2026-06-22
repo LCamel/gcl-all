@@ -47,13 +47,12 @@ instance (Fresh m) => Substitutable m Expr Expr where
   subst sb (Case expr clauses l) = Case <$> subst sb expr <*> subst sb clauses <*> pure l
   subst sb (Subst e tb) =
     Subst
-      <$> subst sb e
+      <$> subst (substractSubDomain sb (map fst tb)) e
       <*> forM
         tb
         ( \(x, f) ->
             (,) x <$> subst sb f
         )
-  -- ChAoS: Is this the correct behavior for specification?
   subst _ e@EHole {} = return e
 
 instance (Fresh m) => Substitutable m CaseClause Expr where

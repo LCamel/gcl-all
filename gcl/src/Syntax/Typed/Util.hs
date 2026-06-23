@@ -7,7 +7,6 @@ import qualified Data.Map as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import GCL.Range (MaybeRanged (..), (<--->))
-import Render (Render (render))
 import Syntax.Abstract.Types (TBase (TBool), Type (..))
 import qualified Syntax.Abstract.Types as A
 import Syntax.Common (Name (..), nameToText)
@@ -119,4 +118,22 @@ nameOf :: Either Name Hole -> Name
 nameOf = either id holeToName
 
 holeToName :: Hole -> Name
-holeToName hole@(Hole _ _ _ r _) = Name (T.pack $ show $ render hole) (Just r)
+holeToName hole@(Hole _ _ _ r _) = Name (T.pack $ renderHole hole) (Just r)
+  where
+    renderHole (Hole _ holeNumber _ _ _) = "{! !}" ++ subscriptNumber holeNumber
+
+    subscriptNumber :: Int -> String
+    subscriptNumber = map digitToSubscript . show
+
+    digitToSubscript :: Char -> Char
+    digitToSubscript '0' = '₀'
+    digitToSubscript '1' = '₁'
+    digitToSubscript '2' = '₂'
+    digitToSubscript '3' = '₃'
+    digitToSubscript '4' = '₄'
+    digitToSubscript '5' = '₅'
+    digitToSubscript '6' = '₆'
+    digitToSubscript '7' = '₇'
+    digitToSubscript '8' = '₈'
+    digitToSubscript '9' = '₉'
+    digitToSubscript c = c

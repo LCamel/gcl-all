@@ -58,7 +58,7 @@ instance
 -- A common pattern: performing substitution on an
 -- expression with binders, e.g
 --       (\ xs -> e) sb = (\ xs' -> e')
---   where (xs', e') <- substBinder sb xs e.
+--   where (xs', e', sb') <- substBinder sb xs e.
 -- It performs substitution on e, while renaming xs if necessary.
 
 substBinder ::

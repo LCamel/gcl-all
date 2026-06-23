@@ -34,7 +34,9 @@ handleExpr _ (Lit x _ l) = tempHandleMaybeRange l $ render x
 handleExpr _ (Var x _ l) = tempHandleMaybeRange l $ render x
 handleExpr _ (Const x _ l) = tempHandleMaybeRange l $ render x
 handleExpr _ (Op _ _) = error "erroneous syntax given to render"
-handleExpr _ (Chain ch) = render ch
+handleExpr n (Chain ch) = case ch of
+  Pure e -> handleExpr n e
+  More _ op _ _ -> parensIf n (Just op) (render ch)
 handleExpr n (App (App (Op (ArithOp op) _) left _) right _) =
   -- binary operators
   parensIf n (Just (ArithOp op)) $
@@ -137,7 +139,11 @@ handleExprRZ _ rz (Lit x _ l) = markRedex rz $ tempHandleMaybeRange l $ render x
 handleExprRZ _ rz (Var x _ l) = markRedex rz $ tempHandleMaybeRange l $ render x
 handleExprRZ _ rz (Const x _ l) = markRedex rz $ tempHandleMaybeRange l $ render x
 handleExprRZ _ _ (Op _ _) = error "erroneous syntax given to render"
-handleExprRZ _ rz (Chain ch) = markRedex rz $ fst (handleChainRZ rz 0 ch)
+handleExprRZ n rz (Chain ch) = markRedex rz $ wrap (fst (handleChainRZ rz 0 ch))
+  where
+    wrap = case ch of
+      Pure _ -> id
+      More _ op _ _ -> parensIf n (Just op)
 handleExprRZ n rz (App (App (Op (ArithOp op) _) left _) right _) =
   -- binary operators
   markRedex rz $

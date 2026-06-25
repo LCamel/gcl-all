@@ -12,6 +12,7 @@ import Syntax.Common
 import Syntax.Substitution
 import Syntax.Typed.Instances.Free ()
 import Syntax.Typed.Types
+import Syntax.Typed.Util (typeOf)
 
 instance Variableous Expr Type where
   isVar (Var x t _) = Just (x, t)
@@ -45,15 +46,10 @@ instance (Fresh m) => Substitutable m Expr Expr where
   subst sb (ArrUpd a i v l) =
     ArrUpd <$> subst sb a <*> subst sb i <*> subst sb v <*> pure l
   subst sb (Case expr clauses l) = Case <$> subst sb expr <*> subst sb clauses <*> pure l
-  subst sb (Subst e tb) =
-    Subst
-      <$> subst sb e
-      <*> forM
-        tb
-        ( \(x, f) ->
-            (,) x <$> subst sb f
-        )
-  -- ChAoS: Is this the correct behavior for specification?
+  subst sb (Subst e tb) = do
+    let (xs, es) = unzip (map (\(x, e) -> ((x, typeOf e), e)) tb)
+    (xs', e', _) <- substBinder sb xs e
+    Subst e' . zip (map fst xs') <$> mapM (subst sb) es
   subst _ e@EHole {} = return e
 
 instance (Fresh m) => Substitutable m CaseClause Expr where

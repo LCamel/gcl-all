@@ -58,7 +58,7 @@ instance
 -- A common pattern: performing substitution on an
 -- expression with binders, e.g
 --       (\ xs -> e) sb = (\ xs' -> e')
---   where (xs', e') <- substBinder sb xs e.
+--   where (xs', e', sb') <- substBinder sb xs e.
 -- It performs substitution on e, while renaming xs if necessary.
 
 substBinder ::
@@ -86,10 +86,13 @@ substBinder sb binders body = do
 
 shrinkSubst :: [Name] -> Set Text -> Subst b -> Subst b
 shrinkSubst binders ns subs =
-  restrictKeys (substractKeys subs (map nameToText binders)) ns
+  restrictKeys (substractSubDomain subs binders) ns
+
+substractSubDomain :: Subst b -> [Name] -> Subst b
+substractSubDomain sb bs =
+  filterWithKey (\k _ -> not (k `elem` bs')) sb
   where
-    substractKeys sb bs =
-      filterWithKey (\k _ -> not (k `elem` bs)) sb
+    bs' = map nameToText bs
 
 genBinderRenaming ::
   (Fresh m, Variableous e t) =>

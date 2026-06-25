@@ -84,9 +84,9 @@ spFunctions (structSegs, struct) = spSStmts
       -- substitute "xs"s with fresh names in "pre"
       let pre' = syntaxSubst' xs freVars pre
 
-      let pairs = zip freVars es
+      let pairs = zipWith (\x e -> (nameVar (nameOf x) (typeOf e), e)) xs es
       let predicates = [x `eqq` syntaxSubst' xs freVars e | (x, e) <- pairs]
-      return $ exists (zip freNames ts) (conjunct predicates) pre'
+      return $ exists (zip freNames ts) pre' (conjunct predicates)
     sp (pre, _) (AAssign (Var x t _) i e _) = do
       -- {P} x[I] := E { (exist x' :: x = x'[I[x'/x] -> E[x'/x]] && P[x'/x]) }
       xn <- freshName' (nameToText x)

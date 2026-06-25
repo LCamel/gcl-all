@@ -141,6 +141,11 @@ extractFnClause (ValDefn _ ptns _ body) =
 extractFnClause _ = error "extractFnClause: Patterns exhausted. Shouldn't happen"
 
 desugarClauses :: Maybe Range -> [([A.Pattern], A.Expr)] -> AbsM A.Expr
+-- A plain value binding (e.g. `id2 = id`) has a single clause with no
+-- patterns. Return its body directly instead of wrapping it in a degenerate
+-- `case () of () -> body`, which would otherwise break reduction when the
+-- value is a function being inlined into an application.
+desugarClauses _ [([], body)] = return body
 desugarClauses range clauses = do
   fnames <- freshNames (replicate arity (Text.pack "arg"))
   return $ wrapLam fnames (mkCase fnames)

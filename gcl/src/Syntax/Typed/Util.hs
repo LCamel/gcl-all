@@ -7,7 +7,6 @@ import qualified Data.Map as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import GCL.Range (MaybeRanged (..), (<--->))
-import Render (Render (render))
 import Syntax.Abstract.Types (TBase (TBool), Type (..))
 import qualified Syntax.Abstract.Types as A
 import Syntax.Common (Name (..), nameToText)
@@ -93,6 +92,25 @@ programToScopeForSubstitution (Program defns decls _ _ _) =
 syntaxSubst :: [Name] -> [Expr] -> Expr -> Expr
 syntaxSubst xs es e = Subst e (zip xs es)
 
+{-
+  Since we allow holes in the LHS of assignments:
+
+    { }₀ := e
+
+  the induced substitution might have a hole as a denominator.
+  However, substitutions are currently represented by [(Name, Expr)]
+  where Names is just Text with a location.
+
+  The hack below simply "prints" the hole into a piece of Text,
+  e.g, a Text containing "{ }₀",and stores it into the substitution.
+
+  The substitution certainly will not function correctly when an
+  EHole representing { }₀ appears in an expression. However, this is
+  probably okay for now, since { }₀ does not have a name, cannot
+  be referred, and therefore probably won't appear in any pre/post
+  conditions. Fix this if it turns out to be otherwise.
+-}
+
 syntaxSubst' :: [Either Name Hole] -> [Expr] -> Expr -> Expr
 syntaxSubst' xs es e = Subst e (zip (map nameOf xs) es)
 
@@ -100,4 +118,22 @@ nameOf :: Either Name Hole -> Name
 nameOf = either id holeToName
 
 holeToName :: Hole -> Name
-holeToName hole@(Hole _ _ _ r _) = Name (T.pack $ show $ render hole) (Just r)
+holeToName hole@(Hole _ _ _ r _) = Name (T.pack $ renderHole hole) (Just r)
+  where
+    renderHole (Hole _ holeNumber _ _ _) = "{! !}" ++ subscriptNumber holeNumber
+
+    subscriptNumber :: Int -> String
+    subscriptNumber = map digitToSubscript . show
+
+    digitToSubscript :: Char -> Char
+    digitToSubscript '0' = '₀'
+    digitToSubscript '1' = '₁'
+    digitToSubscript '2' = '₂'
+    digitToSubscript '3' = '₃'
+    digitToSubscript '4' = '₄'
+    digitToSubscript '5' = '₅'
+    digitToSubscript '6' = '₆'
+    digitToSubscript '7' = '₇'
+    digitToSubscript '8' = '₈'
+    digitToSubscript '9' = '₉'
+    digitToSubscript c = c

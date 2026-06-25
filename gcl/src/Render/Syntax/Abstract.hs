@@ -41,7 +41,9 @@ handleExpr _ (Var x l) = tempHandleMaybeRange l $ render x
 handleExpr _ (Const x l) = tempHandleMaybeRange l $ render x
 handleExpr _ (Lit x l) = tempHandleMaybeRange l $ render x
 handleExpr _ (Op _) = error "erroneous syntax given to render"
-handleExpr _ (Chain ch) = render ch
+handleExpr n (Chain ch) = case ch of
+  Pure e _ -> handleExpr n e
+  More _ op _ _ -> parensIf n (Just (ChainOp op)) (render ch)
 handleExpr n (App (App (Op op) left _) right _) =
   -- binary operators
   parensIf n (Just (ArithOp op)) $

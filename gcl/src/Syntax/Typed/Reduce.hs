@@ -110,6 +110,17 @@ reduce env exp@(App (Var f _ _) e r) [] =
     (return exp)
     (\rhs -> reduce env (App rhs e r) [])
     (lookup f env)
+-- The function position is neither a lambda nor a variable. This happens when
+-- a point-free definition is inlined into an application, e.g. `id2 = plus 0`
+-- or `id2 = case c of ... -> id`, leaving a partial application / `case` /
+-- substitution in the function position. Reduce the function position one step
+-- so it can progress towards a lambda; if it cannot make progress, leave the
+-- application untouched instead of falling through to the catch-all error.
+reduce env exp@(App f e r) []
+  | rootReducible f = do
+      f' <- reduce env f []
+      if f' == f then return exp else reduce env (App f' e r) []
+  | otherwise = return exp
 reduce env (App f e r) (0 : p) = App <$> reduce env f p <*> pure e <*> pure r
 reduce env (App f e r) (1 : p) = App f <$> reduce env e p <*> pure r
 reduce env (Lam x t e r) (0 : p) = Lam x t <$> reduce env e p <*> pure r
@@ -151,6 +162,18 @@ reduceNth env n (e : es) p = (e :) <$> reduceNth env (n - 1) es p
 
 betaReduce :: (Fresh m) => Name -> Expr -> Expr -> m Expr
 betaReduce x bdy e = subst [(nameToText x, e)] bdy
+
+-- | Whether an expression is reducible at its very root, i.e. whether
+--   @reduce env e []@ performs a genuine one-step reduction. Used to decide
+--   whether the function position of an application can be simplified before
+--   applying.
+rootReducible :: Expr -> Bool
+rootReducible (App (Lam {}) _ _) = True
+rootReducible (App (Var {}) _ _) = True
+rootReducible (Case {}) = True
+rootReducible (Subst {}) = True
+rootReducible (OutT _ (Tuple {})) = True
+rootReducible _ = False
 
 reduceChain :: (Fresh m) => Env -> Chain -> Int -> Redex -> m Chain
 reduceChain env (Pure e) 0 p = Pure <$> reduce env e p

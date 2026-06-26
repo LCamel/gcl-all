@@ -39,7 +39,7 @@ RUN bash -x build.sh
 #
 # Production runtime image for gcl users.
 #
-FROM mcr.microsoft.com/devcontainers/base:ubuntu-22.04 AS gcl
+FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04 AS gcl
 COPY --from=build-artifacts --chown=vscode:vscode /home/vscode/.local/bin/gcl /home/vscode/.local/bin/
 COPY --from=build-artifacts --chown=vscode:vscode /home/vscode/*.vsix         /home/vscode/
 

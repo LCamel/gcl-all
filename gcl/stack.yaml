@@ -68,7 +68,7 @@ extra-deps:
   - dependent-sum-template-0.2.0.2@sha256:ba563412208bd099a347223dcf9b37df75dfe8a0c9491d6f2d509c6d09691169,2208
   - unliftio-core-0.2.1.0@sha256:f6a2736f858b5390d9384dca43d3ea4d96e9ca17217791791ca4951ba6e8072a,996
   - constraints-extras-0.4.0.2@sha256:5c901e2103d0e3238b29beb2751d20b67c6945749be553d38dd80b3490c57a63,2011
-  # sbv 改用 lts-23.28 snapshot 內建版本（sbv-11.0），不再 pin sbv-8.17 / libBF
+  # sbv now comes from the lts-23.28 snapshot (sbv-11.0); no longer pinning sbv-8.17 / libBF
 
 
   # Megaparsec v9.7.0

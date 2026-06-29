@@ -61,20 +61,6 @@ packages:
   original:
     hackage: constraints-extras-0.4.0.2@sha256:5c901e2103d0e3238b29beb2751d20b67c6945749be553d38dd80b3490c57a63,2011
 - completed:
-    hackage: sbv-8.17@sha256:3e36afa44ee597b213843495e666d88e604e429f0fcec1bbca05ae847bb752a2,29096
-    pantry-tree:
-      sha256: 569fce0cd577b91104a56bab058140978a3c35ab723a602d1b5370c151c95d9f
-      size: 64220
-  original:
-    hackage: sbv-8.17@sha256:3e36afa44ee597b213843495e666d88e604e429f0fcec1bbca05ae847bb752a2,29096
-- completed:
-    hackage: libBF-0.6.3@sha256:ad38e44a038b8da62c82a58b8a762331097569c27a5978258caed8b28cda73e2,1770
-    pantry-tree:
-      sha256: ec79a086512a8526e825787a4ab2afbd4aba33cc0092a631e3426864beda0aeb
-      size: 761
-  original:
-    hackage: libBF-0.6.3@sha256:ad38e44a038b8da62c82a58b8a762331097569c27a5978258caed8b28cda73e2,1770
-- completed:
     hackage: megaparsec-9.7.0@sha256:77e331b4240385974e68d1f8d5ca9014274983cc9ccb8caced743d360c3a409f,3407
     pantry-tree:
       sha256: b8e50b0a933e7d5a0859179203f1dda677fcd57749164168adbd3c815ce733a8

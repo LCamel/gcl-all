@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.0.
+-- This file has been generated from package.yaml by hpack version 0.39.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -148,6 +148,7 @@ library
     , prettyprinter
     , random
     , regex-applicative
+    , sbv
     , srcloc
     , text
     , transformers
@@ -179,6 +180,7 @@ executable gcl
     , prettyprinter
     , random
     , regex-applicative
+    , sbv
     , srcloc
     , text
     , transformers
@@ -220,6 +222,7 @@ test-suite gcl-test
     , prettyprinter
     , random
     , regex-applicative
+    , sbv
     , srcloc
     , tasty
     , tasty-golden

@@ -37,11 +37,36 @@ RUN bash -x build.sh
 
 
 #
+# Fetches the z3 SMT solver, used by gcl at runtime (via sbv).
+# Only the single `z3` executable + its MIT LICENSE are extracted.
+# Arch is selected from TARGETARCH so the same Dockerfile builds x64 and arm64.
+# Reuses the ubuntu-24.04 base (same as the gcl stage; already has curl/unzip
+# and matching glibc) so `z3 --version` here is a real runtime smoke test.
+#
+FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04 AS z3fetch
+# TARGETARCH is auto-populated by BuildKit from the target platform
+# (amd64 / arm64) -- declared, not assigned. Requires BuildKit (the default).
+ARG TARGETARCH
+ARG Z3_VER=4.16.0
+RUN case "$TARGETARCH" in \
+      amd64) Z3_DIR=z3-${Z3_VER}-x64-glibc-2.39   ;; \
+      arm64) Z3_DIR=z3-${Z3_VER}-arm64-glibc-2.38 ;; \
+      *) echo "unsupported TARGETARCH: $TARGETARCH" >&2; exit 1 ;; \
+    esac && \
+    curl -fsSL -o /tmp/z3.zip \
+      "https://github.com/Z3Prover/z3/releases/download/z3-${Z3_VER}/${Z3_DIR}.zip" && \
+    unzip -j /tmp/z3.zip "${Z3_DIR}/bin/z3" "${Z3_DIR}/LICENSE.txt" -d /z3 && \
+    test -f /z3/LICENSE.txt && /z3/z3 --version
+
+
+#
 # Production runtime image for gcl users.
 #
-FROM mcr.microsoft.com/devcontainers/base:ubuntu-22.04 AS gcl
+FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04 AS gcl
 COPY --from=build-artifacts --chown=vscode:vscode /home/vscode/.local/bin/gcl /home/vscode/.local/bin/
 COPY --from=build-artifacts --chown=vscode:vscode /home/vscode/*.vsix         /home/vscode/
+COPY --from=z3fetch /z3/z3          /usr/local/bin/z3
+COPY --from=z3fetch /z3/LICENSE.txt /usr/local/share/z3/LICENSE.txt
 
 
 ########################################
@@ -53,3 +78,5 @@ COPY --from=build-artifacts --chown=vscode:vscode /home/vscode/*.vsix         /h
 #
 FROM prebuilt-haskell-dependencies AS gcl-dev
 COPY --from=build-artifacts --chown=vscode:vscode /home/vscode/.local/bin/gcl /home/vscode/.local/bin/
+COPY --from=z3fetch /z3/z3          /usr/local/bin/z3
+COPY --from=z3fetch /z3/LICENSE.txt /usr/local/share/z3/LICENSE.txt

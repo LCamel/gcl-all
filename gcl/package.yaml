@@ -32,6 +32,7 @@ dependencies:
   - lens
   - transformers
   - deepseq
+  - sbv
 
 library:
   source-dirs: src

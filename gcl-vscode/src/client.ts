@@ -76,19 +76,56 @@ function resolveGclPath(context: vscode.ExtensionContext | undefined): string {
   return "gcl";
 }
 
+/**
+ * Builds the environment for the spawned `gcl` process so it can find the
+ * `z3` solver bundled alongside the binary in the VSIX's `bin/` directory.
+ * gcl reaches z3 through sbv, which by default looks up `z3` on PATH, so we
+ * unconditionally prepend bin/ to PATH. This is harmless when no bundled z3
+ * is present (dev builds via gclPath): the lookup simply falls through to the
+ * rest of PATH.
+ */
+function gclProcessEnv(): NodeJS.ProcessEnv | undefined {
+  if (!extensionContext) return undefined;
+
+  const binDir = path.join(extensionContext.extensionPath, "bin");
+
+  // Packaging into a VSIX can drop the executable bit on the bundled z3;
+  // restore it (best-effort — a spawn error later would surface a real issue).
+  if (process.platform !== "win32") {
+    try {
+      fs.chmodSync(path.join(binDir, "z3"), 0o755);
+    } catch {
+      // no bundled z3 (or already executable); nothing to do
+    }
+  }
+
+  // Update PATH under its existing key casing (Windows commonly uses `Path`);
+  // spreading process.env into a plain object loses the case-insensitive
+  // lookup, so blindly setting `env.PATH` could add a duplicate key that the
+  // child process ignores.
+  const env = { ...process.env };
+  const pathKey =
+    Object.keys(env).find((k) => k.toLowerCase() === "path") ?? "PATH";
+  env[pathKey] = binDir + path.delimiter + (env[pathKey] ?? "");
+  return env;
+}
+
 function createClient(): LanguageClient {
   const gclPath = resolveGclPath(extensionContext);
+  const env = gclProcessEnv();
 
   const serverOptions: ServerOptions = {
     // TODO: Temporarily enable logging in both run and debug modes
     run: {
       command: gclPath,
       args: [`--out=./gcl_server.log`],
+      options: { env },
       transport: TransportKind.stdio,
     },
     debug: {
       command: gclPath,
       args: [`--out=./gcl_server.log`],
+      options: { env },
       transport: TransportKind.stdio,
     },
   };

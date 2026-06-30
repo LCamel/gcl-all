@@ -65,8 +65,8 @@ RUN case "$TARGETARCH" in \
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04 AS gcl
 COPY --from=build-artifacts --chown=vscode:vscode /home/vscode/.local/bin/gcl /home/vscode/.local/bin/
 COPY --from=build-artifacts --chown=vscode:vscode /home/vscode/*.vsix         /home/vscode/
-COPY --from=z3fetch /z3/z3          /usr/local/bin/z3
-COPY --from=z3fetch /z3/LICENSE.txt /usr/local/share/z3/LICENSE.txt
+COPY --from=z3fetch --chown=vscode:vscode /z3/z3          /home/vscode/.local/bin/z3
+COPY --from=z3fetch --chown=vscode:vscode /z3/LICENSE.txt /home/vscode/.local/share/z3/LICENSE.txt
 
 
 ########################################
@@ -78,5 +78,5 @@ COPY --from=z3fetch /z3/LICENSE.txt /usr/local/share/z3/LICENSE.txt
 #
 FROM prebuilt-haskell-dependencies AS gcl-dev
 COPY --from=build-artifacts --chown=vscode:vscode /home/vscode/.local/bin/gcl /home/vscode/.local/bin/
-COPY --from=z3fetch /z3/z3          /usr/local/bin/z3
-COPY --from=z3fetch /z3/LICENSE.txt /usr/local/share/z3/LICENSE.txt
+COPY --from=z3fetch --chown=vscode:vscode /z3/z3          /home/vscode/.local/bin/z3
+COPY --from=z3fetch --chown=vscode:vscode /z3/LICENSE.txt /home/vscode/.local/share/z3/LICENSE.txt

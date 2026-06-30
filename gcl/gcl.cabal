@@ -136,6 +136,7 @@ library
     , bytestring
     , containers
     , deepseq
+    , directory
     , hashable
     , lens
     , lexer-applicative
@@ -167,6 +168,7 @@ executable gcl
     , bytestring
     , containers
     , deepseq
+    , directory
     , gcl
     , hashable
     , lens

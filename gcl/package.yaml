@@ -33,6 +33,7 @@ dependencies:
   - transformers
   - deepseq
   - sbv
+  - directory
 
 library:
   source-dirs: src

@@ -19,3 +19,9 @@
 2. Click "Open Workspace", or open "gcl-all.code-workspace" and click "Open Workspace"
 3. Open a ".hs" in gcl/src, click "Manually via PATH" (*NOT* "Automatically via GHCup" !)
 4. Delete the codespace at https://github.com/codespaces
+
+
+## Releasing
+1. Bump `version` in `gcl-vscode/package.json`. This — not the tag — sets the `.vsix` version. The Marketplace rejects re-publishing the same version, so it must increase every release.
+2. Commit, then tag with the **same** version and push: `git tag v0.42.0 && git push origin main --tags`.
+3. A cold build takes ~20–25 min. Verify the release: `gh release view v0.42.0 --json assets -q '.assets[].name'` (expect 4 `.vsix` + 4 binary archives).

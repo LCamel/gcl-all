@@ -20,7 +20,7 @@ import Syntax.Typed.Reduce
     descend,
     initRZ,
     isRedex,
-    redexRT,
+    redexRT_sat,
   )
 
 ------------------------------------------------------------------------------
@@ -108,7 +108,7 @@ handleExpr n (Subst e subs) =
 -- nodes get wrapped (via `redexE`) with their path. Layout mirrors
 -- `handleExpr` exactly; the only addition is the per-node redex marking.
 renderExprRZ :: Expr -> Inlines
-renderExprRZ e = handleExprRZ NoContext (initRZ [] (redexRT e)) e
+renderExprRZ e = handleExprRZ NoContext (initRZ [] (redexRT_sat e)) e
 
 -- | Render a PO predicate. When the top-level operator is `⇒`, break it onto
 -- two lines (`P ⇒` / `Q`); otherwise fall back to `renderExprRZ`. The zipper
@@ -116,7 +116,7 @@ renderExprRZ e = handleExprRZ NoContext (initRZ [] (redexRT e)) e
 -- stays consistent.
 renderPOPredRZ :: Expr -> Inlines
 renderPOPredRZ e@(App (App (Op (ArithOp op@(ImpliesU _)) _) left _) right _) =
-  let rz = initRZ [] (redexRT e)
+  let rz = initRZ [] (redexRT_sat e)
    in markRedex rz $
         vertE
           [ handleExprRZ (HOLEOp (ArithOp op)) (down (down rz 0) 1) left <+> render op,

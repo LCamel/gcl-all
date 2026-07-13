@@ -2,8 +2,9 @@ module Syntax.Typed.Reduce where
 
 import Control.Arrow ((***))
 import GCL.Common (Fresh (..))
+import qualified Syntax.Abstract.Types as A
 import Syntax.Abstract.Types (Pattern (..))
-import Syntax.Common.Types (Name, nameToText)
+import Syntax.Common.Types (Name, TypeOp (..), nameToText)
 import Syntax.Substitution
 import Syntax.Typed.Instances.Substitution ()
 import Syntax.Typed.Types
@@ -80,6 +81,112 @@ redexRT (EHole {}) = leaf
 redexRTChain :: Chain -> [RT]
 redexRTChain (Pure e) = [redexRT e]
 redexRTChain (More ch _ _ e) = redexRT e : redexRTChain ch
+
+-- Saturated-redex marking (redexRT_sat) --------------------------------------
+--
+-- Like redexRT, but an application spine is marked as a redex ONLY when it is
+-- "saturated": its head is a reducible function (a defined Var or a Lam) that
+-- has been applied to enough arguments that its own result is no longer a
+-- function. Partial applications stay unmarked (kept symbolic). Every other
+-- constructor mirrors redexRT exactly, so the tree shape -- and hence the
+-- render zipper paths -- is identical.
+
+redexRT_sat :: Expr -> RT
+redexRT_sat (Lit _ _ _) = leaf
+redexRT_sat (Var _ _ _) = leaf
+redexRT_sat (Const _ _ _) = leaf
+redexRT_sat (Op _ _) = leaf
+redexRT_sat (Chain ch) = Node False (redexRTChain_sat ch)
+redexRT_sat e@(App f a _) = Node (saturatedRedex e) [redexRT_sat f, redexRT_sat a]
+redexRT_sat (Lam _ _ e _) = Node False [redexRT_sat e]
+redexRT_sat (Tuple es) = Node False (map redexRT_sat es)
+redexRT_sat (OutT _ t@(Tuple _)) = Node True [redexRT_sat t]
+redexRT_sat (OutT _ e) = Node False [redexRT_sat e]
+redexRT_sat (Quant _ _ r b _) = Node False [redexRT_sat r, redexRT_sat b]
+redexRT_sat (ArrIdx a i _) = Node False [redexRT_sat a, redexRT_sat i]
+redexRT_sat (ArrUpd a i e _) =
+  Node False [redexRT_sat a, redexRT_sat i, redexRT_sat e]
+redexRT_sat (Case e cls _) =
+  Node True (redexRT_sat e : map (redexRT_sat . getClause) cls)
+  where
+    getClause (CaseClause _ e) = e
+redexRT_sat (Subst e sb) =
+  Node True (redexRT_sat e : map (redexRT_sat . snd) sb)
+redexRT_sat (EHole {}) = leaf
+
+redexRTChain_sat :: Chain -> [RT]
+redexRTChain_sat (Pure e) = [redexRT_sat e]
+redexRTChain_sat (More ch _ _ e) = redexRT_sat e : redexRTChain_sat ch
+
+-- | Head of an application spine.
+spineHead :: Expr -> Expr
+spineHead (App f _ _) = spineHead f
+spineHead e = e
+
+-- | Whether the spine head is a function we can unfold/apply.
+isReducibleHead :: Expr -> Bool
+isReducibleHead (Var {}) = True
+isReducibleHead (Lam {}) = True
+isReducibleHead _ = False
+
+-- | Number of leading function arrows of a type (handles both the TFunc and
+--   the Arrow-application encodings that show up on typed nodes).
+arrowArity :: A.Type -> Int
+arrowArity (A.TFunc _ t2 _) = 1 + arrowArity t2
+arrowArity (A.TApp (A.TApp (A.TOp (Arrow _)) _ _) t2 _) = 1 + arrowArity t2
+arrowArity _ = 0
+
+-- | Codomain of a function/array type. Arrays are @Int -> element@, and a
+--   function type appears either as @TFunc@ or as the Arrow-application form
+--   inference produces -- all three peel one argument. @Nothing@ if the type is
+--   neither.
+codomain :: A.Type -> Maybe A.Type
+codomain (A.TFunc _ t _) = Just t
+codomain (A.TApp (A.TApp (A.TOp (Arrow _)) _ _) t _) = Just t
+codomain (A.TArray _ t _) = Just t
+codomain _ = Nothing
+
+-- | i-th component of a tuple type.
+component :: Int -> A.Type -> Maybe A.Type
+component i (A.TTuple ts) | i < length ts = Just (ts !! i)
+component _ _ = Nothing
+
+-- | An expression's own type, computed totally so it never faults like the
+--   library's partial @typeOf@ (which rejects both @App (Lam ..) _@ and the
+--   Arrow-application encoding of functions-as-arrays). Deriving the real type
+--   -- rather than counting arrows structurally -- is what makes projections
+--   correct at any nesting depth: @a[i][j]@ peels @codomain@ twice, so an
+--   @array of array of (Int -> Int)@ still reports a function. @Nothing@ only
+--   for genuinely underivable types, which do not arise in well-typed input.
+exprType :: Expr -> Maybe A.Type
+exprType (Lit _ ty _) = Just ty
+exprType (Var _ ty _) = Just ty
+exprType (Const _ ty _) = Just ty
+exprType (Op _ ty) = Just ty
+exprType (EHole (Hole _ _ ty _ _)) = Just ty
+exprType (Lam _ t b _) = (\r -> A.TFunc t r Nothing) <$> exprType b
+exprType (App f _ _) = codomain =<< exprType f
+exprType (ArrIdx arr _ _) = codomain =<< exprType arr
+exprType (OutT i e) = component i =<< exprType e
+exprType (Subst e _) = exprType e
+exprType (Quant _ _ _ b _) = exprType b
+exprType (Case _ (CaseClause _ b : _) _) = exprType b
+exprType (Case _ [] _) = Nothing
+exprType (ArrUpd arr _ _ _) = exprType arr
+exprType (Tuple es) = A.TTuple <$> traverse exprType es
+exprType (Chain _) = Just (A.TBase A.TBool Nothing)
+
+-- | Number of arguments an expression can still take before its result stops
+--   being a function (@0@ = "already a non-function value"). An underivable
+--   type counts as a non-function.
+exprArrows :: Expr -> Int
+exprArrows = maybe 0 arrowArity . exprType
+
+-- | Whether an application spine is a saturated redex: a reducible head (a
+--   defined Var or a Lam) applied to enough arguments that the result is no
+--   longer a function. Partial (function-typed) applications are not redexes.
+saturatedRedex :: Expr -> Bool
+saturatedRedex e = isReducibleHead (spineHead e) && exprArrows e == 0
 
 -- counting from the rightmost expression
 -- simply because it makes things easier.

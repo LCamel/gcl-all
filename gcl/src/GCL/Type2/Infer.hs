@@ -302,9 +302,13 @@ inferTuple exprs = do
       (mempty, [], [])
       exprs
 
-  let resultTy = A.TTuple (map (applySubst exprsSubst) exprsTy)
+  -- `foldM` above accumulates by prepending, so both lists come out reversed
+  -- relative to `exprs`. Reverse them back so the tuple's elements (and its
+  -- element types) keep source order -- otherwise pattern binders later match
+  -- against swapped positions (see `bindPattern` / `matchPattern`).
+  let resultTy = A.TTuple (map (applySubst exprsSubst) (reverse exprsTy))
 
-  return (exprsSubst, resultTy, T.Tuple typedExprs)
+  return (exprsSubst, resultTy, T.Tuple (reverse typedExprs))
 
 inferOutT :: Int -> A.Expr -> TIMonad (Subst, A.Type, T.Expr)
 inferOutT i expr = do
@@ -648,7 +652,7 @@ bindPattern pat@(A.PattTuple ps) ty = do
           return (s'' <> s', e'' <> e')
       )
       (mempty, mempty)
-      (zip ps (reverse tys)) -- XXX: why does the pattern order have to be backwards
+      (zip ps tys) -- was `reverse tys` to compensate for inferTuple reversing its elements; now that inferTuple keeps source order, this must match in order too
   return (patsSubst, patsEnv)
 bindPattern (A.PattConstructor ctorName pats) ty = do
   env <- ask

@@ -46,11 +46,17 @@ isReducibleHead _ = False
 -- | Number of arguments an expression can still take before its result stops
 --   being a function (@0@ = "already a non-function value"). An underivable
 --   type counts as a non-function.
+--   exprArrows (add) = 2
+--   exprArrows (add 2) = 1
+--   exprArrows (add 2 3) = 0
 exprArrows :: Expr -> Int
 exprArrows = maybe 0 arrowArity . exprType
 
 -- | Number of leading function arrows of a type (handles both the TFunc and
 --   the Arrow-application encodings that show up on typed nodes).
+--   arrowArity (Int -> Int -> Int) = 2
+--   arrowArity (Int -> Int)        = 1
+--   arrowArity Int                 = 0
 arrowArity :: A.Type -> Int
 arrowArity (A.TFunc _ t2 _) = 1 + arrowArity t2
 arrowArity (A.TApp (A.TApp (A.TOp (Arrow _)) _ _) t2 _) = 1 + arrowArity t2
@@ -60,6 +66,9 @@ arrowArity _ = 0
 --   function type appears either as @TFunc@ or as the Arrow-application form
 --   inference produces -- all three peel one argument. @Nothing@ if the type is
 --   neither.
+--   codomain (Int -> Bool)       = Just Bool   -- TFunc or Arrow-app encoding
+--   codomain (Array Int of Bool) = Just Bool   -- TArray
+--   codomain Int                 = Nothing
 codomain :: A.Type -> Maybe A.Type
 codomain (A.TFunc _ t _) = Just t
 codomain (A.TApp (A.TApp (A.TOp (Arrow _)) _ _) t _) = Just t

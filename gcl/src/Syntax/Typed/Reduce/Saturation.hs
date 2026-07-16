@@ -30,7 +30,7 @@ import Syntax.Typed.Types
 --   defined Var or a Lam) applied to enough arguments that the result is no
 --   longer a function. Partial (function-typed) applications are not redexes.
 saturatedRedex :: Expr -> Bool
-saturatedRedex e = isReducibleHead (spineHead e) && exprArrows e == 0
+saturatedRedex e = isReducibleHead (spineHead e) && arrowArity (exprType e) == 0
 
 -- | Head of an application spine.
 spineHead :: Expr -> Expr
@@ -43,16 +43,9 @@ isReducibleHead (Var {}) = True
 isReducibleHead (Lam {}) = True
 isReducibleHead _ = False
 
--- | Number of arguments an expression can still take before its result stops
---   being a function (@0@ = "already a non-function value").
---   exprArrows (add) = 2
---   exprArrows (add 2) = 1
---   exprArrows (add 2 3) = 0
-exprArrows :: Expr -> Int
-exprArrows = arrowArity . exprType
-
 -- | Number of leading function arrows of a type (handles both the TFunc and
---   the Arrow-application encodings that show up on typed nodes).
+--   the Arrow-application encodings that show up on typed nodes). @0@ means the
+--   type is not a function, so an expression of this type is fully applied.
 --   arrowArity (Int -> Int -> Int) = 2
 --   arrowArity (Int -> Int)        = 1
 --   arrowArity Int                 = 0

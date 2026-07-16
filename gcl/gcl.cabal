@@ -123,6 +123,7 @@ library
       Syntax.Typed.Instances.Substitution
       Syntax.Typed.Operator
       Syntax.Typed.Reduce
+      Syntax.Typed.Reduce.Saturation
       Syntax.Typed.Types
       Syntax.Typed.Util
   other-modules:

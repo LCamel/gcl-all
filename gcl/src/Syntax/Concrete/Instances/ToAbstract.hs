@@ -141,11 +141,16 @@ extractFnClause (ValDefn _ ptns _ body) =
 extractFnClause _ = error "extractFnClause: Patterns exhausted. Shouldn't happen"
 
 desugarClauses :: Maybe Range -> [([A.Pattern], A.Expr)] -> AbsM A.Expr
--- A plain value binding (e.g. `id2 = id`) has a single clause with no
--- patterns. Return its body directly instead of wrapping it in a degenerate
--- `case () of () -> body`, which would otherwise break reduction when the
--- value is a function being inlined into an application.
-desugarClauses _ [([], body)] = return body
+-- A single clause whose patterns are all plain binders (e.g. `sub x y = x - y`,
+-- or a value binding like `id2 = id` with no patterns at all) needs no pattern
+-- matching: desugar it to plain lambdas over the binders instead of a
+-- degenerate `case (x, y) of (x, y) -> body`, so reduction goes straight to
+-- the substituted body without an intermediate case step.
+desugarClauses _ [(ptns, body)]
+  | Just binders <- mapM patternBinder ptns = return $ wrapLam binders body
+  where
+    patternBinder (A.PattBinder x) = Just x
+    patternBinder _ = Nothing
 desugarClauses range clauses = do
   fnames <- freshNames (replicate arity (Text.pack "arg"))
   return $ wrapLam fnames (mkCase fnames)

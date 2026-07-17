@@ -12,6 +12,7 @@ import Control.Monad.State
 import Data.Bifunctor (Bifunctor (..))
 import Data.Bitraversable (Bitraversable (bitraverse))
 import Data.Either (partitionEithers)
+import qualified Data.List as List
 import qualified Data.Text as Text
 import GCL.Common
 import GCL.Range (MaybeRanged (maybeRangeOf), Range (..), rangeOf, (<--->))
@@ -141,13 +142,18 @@ extractFnClause (ValDefn _ ptns _ body) =
 extractFnClause _ = error "extractFnClause: Patterns exhausted. Shouldn't happen"
 
 desugarClauses :: Maybe Range -> [([A.Pattern], A.Expr)] -> AbsM A.Expr
--- A single clause whose patterns are all plain binders (e.g. `sub x y = x - y`,
--- or a value binding like `id2 = id` with no patterns at all) needs no pattern
--- matching: desugar it to plain lambdas over the binders instead of a
--- degenerate `case (x, y) of (x, y) -> body`, so reduction goes straight to
--- the substituted body without an intermediate case step.
+-- A single clause whose patterns are all distinct plain binders (e.g.
+-- `sub x y = x - y`, or a value binding like `id2 = id` with no patterns at
+-- all) needs no pattern matching: desugar it to plain lambdas over the
+-- binders instead of a degenerate `case (x, y) of (x, y) -> body`, so
+-- reduction goes straight to the substituted body without an intermediate
+-- case step. Repeated binders (e.g. `f x x = x`) must fall through to the
+-- case form so that inferCaseClause rejects them with DuplicatedIdentifiers,
+-- as it does for multi-clause definitions.
 desugarClauses _ [(ptns, body)]
-  | Just binders <- mapM patternBinder ptns = return $ wrapLam binders body
+  | Just binders <- mapM patternBinder ptns,
+    binders == List.nub binders =
+      return $ wrapLam binders body
   where
     patternBinder (A.PattBinder x) = Just x
     patternBinder _ = Nothing

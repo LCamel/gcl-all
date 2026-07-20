@@ -152,7 +152,7 @@ instance Eq Type where
   TArray {} == _ = False
   TTuple i1 == TTuple i2 = i1 == i2
   TTuple {} == _ = False
-  TOp (Arrow _) == TOp (Arrow _) = True
+  TOp op1 == TOp op2 = eqTypeOp op1 op2
   TOp {} == _ = False
   TData name1 _ == TData name2 _ = name1 == name2
   TData {} == _ = False
@@ -164,6 +164,13 @@ instance Eq Type where
   TMetaVar {} == _ = False
   TType == TType = True
   TType == _ = False
+
+-- Keep this comparison exhaustive rather than adding a wildcard fallback.
+-- With incomplete-pattern warnings enabled, adding a new 'TypeOp' constructor
+-- then forces its equality semantics to be considered instead of silently
+-- treating two values of the new constructor as unequal.
+eqTypeOp :: TypeOp -> TypeOp -> Bool
+eqTypeOp (Arrow _) (Arrow _) = True
 
 --------------------------------------------------------------------------------
 

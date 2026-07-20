@@ -44,13 +44,11 @@ isReducibleHead (Var {}) = True
 isReducibleHead (Lam {}) = True
 isReducibleHead _ = False
 
--- | Number of leading function arrows of a type (handles both the TFunc and
---   the Arrow-application encodings that show up on typed nodes). @0@ means the
---   type is not a function, so an expression of this type is fully applied.
+-- | Number of leading Arrow applications of a type. @0@ means the type is not
+--   a function, so an expression of this type is fully applied.
 --   arrowArity (Int -> Int -> Int) = 2
 --   arrowArity (Int -> Int)        = 1
 --   arrowArity Int                 = 0
 arrowArity :: A.Type -> Int
-arrowArity (A.TFunc _ t2 _) = 1 + arrowArity t2
 arrowArity (A.TApp (A.TApp (A.TOp (Arrow _)) _ _) t2 _) = 1 + arrowArity t2
 arrowArity _ = 0

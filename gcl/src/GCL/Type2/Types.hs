@@ -55,7 +55,7 @@ import GCL.Common (Counterous (..), Fresh (..))
 import GCL.Range (Range)
 import GHC.Generics (Generic)
 import qualified Syntax.Abstract.Types as A
-import Syntax.Common.Types (Name (Name), TypeOp (..))
+import Syntax.Common.Types (Name (Name))
 
 data TypeError
   = NotInScope Name
@@ -126,7 +126,7 @@ infixr 1 `typeToType`
 
 -- | construct a type of `a -> b`
 typeToType :: A.Type -> A.Type -> A.Type
-typeToType t1 t2 = A.TApp (A.TApp (A.TOp (Arrow Nothing)) t1 Nothing) t2 Nothing
+typeToType = A.mkArrowType
 
 -- XXX: is including `Loc` relevant here?
 typeInt :: A.Type

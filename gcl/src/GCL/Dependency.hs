@@ -173,8 +173,6 @@ resolveTermDefinitions termDeps _ = return termDeps
 resolveType :: C.Name -> UnresolvedDepMap -> A.Type -> DepMonad UnresolvedDepMap
 resolveType name deps (A.TArray _ typ _) =
   resolveType name deps typ
-resolveType name deps (A.TFunc typA typB _) =
-  foldM (resolveType name) deps [typA, typB]
 resolveType name deps (A.TData dataName _) =
   return $ addDependency dataName name deps
 resolveType name deps (A.TApp typA typB _) =

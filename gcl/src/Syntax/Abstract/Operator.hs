@@ -8,6 +8,7 @@ import Syntax.Abstract
     Lit (..),
     TBase (..),
     Type (..),
+    mkArrowType,
   )
 import Syntax.Common
 import Prelude hiding (Ordering (..))
@@ -91,4 +92,4 @@ tInt :: Type
 tInt = TBase TInt Nothing
 
 tFunc :: Type -> Type -> Type
-s `tFunc` t = TFunc s t Nothing
+tFunc = mkArrowType

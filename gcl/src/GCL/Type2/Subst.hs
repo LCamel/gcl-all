@@ -25,8 +25,6 @@ applySubst _ ty@A.TBase {} = ty
 applySubst subst (A.TArray interval ty range) =
   A.TArray interval (applySubst subst ty) range
 applySubst subst (A.TTuple tys) = A.TTuple $ map (applySubst subst) tys
-applySubst subst (A.TFunc e1 e2 range) =
-  A.TFunc (applySubst subst e1) (applySubst subst e2) range
 applySubst _ ty@A.TOp {} = ty
 applySubst subst (A.TApp e1 e2 range) =
   A.TApp (applySubst subst e1) (applySubst subst e2) range

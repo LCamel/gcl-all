@@ -119,7 +119,6 @@ typeToKind :: A.Type -> TIMonad A.Type
 typeToKind A.TBase {} = return A.TType
 typeToKind A.TArray {} = return $ A.TType `typeToType` A.TType
 typeToKind A.TTuple {} = undefined
-typeToKind A.TFunc {} = undefined
 typeToKind (A.TOp (Arrow _)) = return $ A.TType `typeToType` A.TType `typeToType` A.TType
 typeToKind (A.TData name _) = do
   env <- ask

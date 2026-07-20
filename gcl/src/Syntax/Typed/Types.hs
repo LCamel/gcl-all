@@ -87,7 +87,6 @@ data KindedType
   = TBase TBase Kind (Maybe Range)
   | TArray Interval KindedType (Maybe Range)
   | TTuple [KindedType]
-  | TFunc KindedType KindedType (Maybe Range)
   | TOp TypeOp Kind
   | TData Name Kind (Maybe Range)
   | TApp KindedType KindedType (Maybe Range)

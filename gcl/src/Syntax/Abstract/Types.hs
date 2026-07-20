@@ -9,7 +9,7 @@ import Syntax.Common
   ( ArithOp,
     ChainOp,
     Name,
-    TypeOp,
+    TypeOp (..),
   )
 import Prelude hiding (Ordering (..))
 
@@ -124,7 +124,6 @@ data Type
   | TArray Interval Type (Maybe Range) -- TODO: Make this a higher-kinded type.
   -- TTuple has no srcloc info because it has no conrete syntax at the moment
   | TTuple [Type] -- a list of types, for internal use
-  | TFunc Type Type (Maybe Range)
   | TOp TypeOp
   | TData Name (Maybe Range)
   | TApp Type Type (Maybe Range)
@@ -132,6 +131,13 @@ data Type
   | TMetaVar Name (Maybe Range)
   | TType -- "*"
   deriving (Show, Generic)
+
+mkArrowType :: Type -> Type -> Type
+mkArrowType argument result =
+  TApp
+    (TApp (TOp (Arrow Nothing)) argument Nothing)
+    result
+    Nothing
 
 data Scheme
   = Forall [Name] Type -- ∀α₁, ..., αₙ. t
@@ -146,8 +152,7 @@ instance Eq Type where
   TArray {} == _ = False
   TTuple i1 == TTuple i2 = i1 == i2
   TTuple {} == _ = False
-  TFunc {} == _ = False
-  TOp op1 == TOp op2 = op1 == op2
+  TOp (Arrow _) == TOp (Arrow _) = True
   TOp {} == _ = False
   TData name1 _ == TData name2 _ = name1 == name2
   TData {} == _ = False

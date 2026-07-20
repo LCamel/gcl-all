@@ -132,7 +132,6 @@ instance Free Type where
   freeVars (TBase _ _) = mempty
   freeVars (TArray _ t _) = freeVars t
   freeVars (TTuple _) = mempty
-  freeVars (TFunc l r _) = freeVars l <> freeVars r
   freeVars (TData _ _) = mempty
   freeVars (TOp _) = mempty
   freeVars (TApp l r _) = freeVars l <> freeVars r

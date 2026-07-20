@@ -4,6 +4,7 @@ import qualified Test.OrigCoord as OrigCoord
 import qualified Test.Parser as Parser
 import qualified Test.Render as Render
 import qualified Test.SrcLoc as SrcLoc
+import qualified Test.Type as Type
 import Test.Tasty
   ( TestTree,
     defaultMain,
@@ -26,5 +27,6 @@ tests =
       OrigCoord.tests,
       Parser.tests,
       Render.tests,
-      SrcLoc.tests
+      SrcLoc.tests,
+      Type.tests
     ]

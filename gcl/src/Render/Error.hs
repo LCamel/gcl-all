@@ -6,7 +6,7 @@ import Data.Foldable (toList)
 import Error
 import GCL.Predicate (HoleError (..))
 import GCL.Range (MaybeRanged (..), mkRange)
-import GCL.Type (TypeError (..))
+import GCL.Type2.Types (TypeError (..))
 import GCL.WP.Types (StructError (..))
 import Render.Class
 import Render.Element
@@ -52,12 +52,6 @@ instance RenderSection TypeError where
     Section
       Red
       [ Header "Cannot unify types" loc,
-        Paragraph $ "Cannot unify: " <> render s <> "\nwith        :" <+> render t
-      ]
-  renderSection (KindUnifyFailed s t loc) =
-    Section
-      Red
-      [ Header "Cannot unify kinds" loc,
         Paragraph $ "Cannot unify: " <> render s <> "\nwith        :" <+> render t
       ]
   renderSection (RecursiveType name t loc) =

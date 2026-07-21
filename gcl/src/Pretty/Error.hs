@@ -7,7 +7,7 @@ import Data.Foldable (toList)
 import Error
 import GCL.Predicate (HoleError (..))
 import GCL.Range (MaybeRanged (..), displayPos)
-import GCL.Type (TypeError (..))
+import GCL.Type2.Types (TypeError (..))
 import GCL.WP.Types
   ( StructError (..),
     StructWarning (..),
@@ -55,8 +55,6 @@ instance Pretty TypeError where
   pretty (NotInScope name) =
     "The definition" <+> pretty name <+> "is not in scope"
   pretty (UnifyFailed a b _) =
-    "Cannot unify:" <+> pretty a <+> "with" <+> pretty b
-  pretty (KindUnifyFailed a b _) =
     "Cannot unify:" <+> pretty a <+> "with" <+> pretty b
   pretty (RecursiveType v a _) =
     "Recursive type variable: " <+> pretty v <+> "in" <+> pretty a

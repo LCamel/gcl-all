@@ -58,7 +58,7 @@ simpleLoad filepath source = runExceptT $ catchError run handler
       case D.evalDependencyResolution abstract of
         Left err -> do
           -- TODO: more error reporting here
-          return $ Left (TypeError (Hack.toOldError err))
+          return $ Left (TypeError err)
         Right typed -> return $ Right typed
 
     toTyped2 :: D.Program -> IO (Either Error T.Program)
@@ -66,5 +66,5 @@ simpleLoad filepath source = runExceptT $ catchError run handler
       case Type2.runToTyped abstract mempty of
         Left err -> do
           -- TODO: more error reporting here
-          return $ Left (TypeError $ Hack.toOldError err)
+          return $ Left (TypeError err)
         Right (typed, _) -> return $ Right typed

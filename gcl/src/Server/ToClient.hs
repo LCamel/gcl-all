@@ -25,7 +25,7 @@ import qualified Data.Text as Text
 import qualified Error
 import qualified GCL.Predicate as GCL
 import GCL.Range (MaybeRanged (..), Range)
-import qualified GCL.Type as Type
+import qualified GCL.Type2.Types as Type
 import qualified GCL.WP.Types as GCL
 import qualified GCL.WP.Types as WP
 import GHC.Generics (Generic)
@@ -306,11 +306,6 @@ convertTypeError (Type.RedundantExprs es) =
   RedundantExprs {expressions = map (show . pretty) es}
 convertTypeError (Type.MissingArguments ns) =
   MissingArguments {argumentNames = map convertName ns}
-convertTypeError (Type.KindUnifyFailed k1 k2 l) =
-  KindUnifyFailed
-    { location = fmap toLSPRange l,
-      kindExpressions = map (show . pretty) [k1, k2]
-    }
 convertTypeError (Type.PatternArityMismatch e a l) =
   PatternArityMismatch
     { location = fmap toLSPRange l,

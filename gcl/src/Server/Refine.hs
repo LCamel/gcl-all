@@ -20,7 +20,6 @@ import GCL.Type2.Types (Env, Inference, runTI)
 import qualified GCL.Type2.Types as T
 import GCL.WP (collectTypedHole, runWP, structStmts)
 import GCL.WP.Types (StructError, StructWarning (..))
-import qualified Hack
 import Language.Lexer.Applicative (TokenStream (..))
 import Pretty.Error ()
 import Prettyprinter (layoutCompact, pretty)
@@ -181,7 +180,7 @@ refineHoleAndDig filePath hole source state = do
 loadConcreteFragment :: Env -> Int -> Spec -> [C.Stmt] -> Either Error FileState
 loadConcreteFragment typeEnv idCount spec stmts = do
   let abstract = C.runAbstractTransform stmts
-  result <- first (TypeError . Hack.toOldError) (mapM (`runToTyped` typeEnv) abstract)
+  result <- first TypeError (mapM (`runToTyped` typeEnv) abstract)
   let (elaborated, state) = foldTIResult result
   (pos, specs, holes, warnings, idCount') <-
     first StructError $ sweepFragment idCount spec elaborated
@@ -206,7 +205,7 @@ loadConcreteFragment typeEnv idCount spec stmts = do
 loadConcreteHoleFragment :: Env -> A.Type -> C.Expr -> (T.Expr -> Maybe HoleError) -> Inference -> Either Error (T.Subst, T.Expr, [Hole], Inference)
 loadConcreteHoleFragment typeEnv ty expr constraint state = do
   let abstract = C.runAbstractTransform expr
-  ((subst, expr'), state') <- first (TypeError . Hack.toOldError) (runTI (typeCheck' abstract ty) typeEnv state)
+  ((subst, expr'), state') <- first TypeError (runTI (typeCheck' abstract ty) typeEnv state)
   case constraint expr' of
     Nothing -> Right (subst, expr', collectTypedHole expr', state')
     Just err -> Left $ HoleError err

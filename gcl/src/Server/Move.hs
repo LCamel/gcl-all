@@ -25,7 +25,7 @@ import qualified Data.Text as T
 import Error (Error (..))
 import GCL.Predicate (Hole (..), Origin (..), PO (..), Spec (..))
 import GCL.Range (MaybeRanged (..), Pos (Pos), Range (Range), mkPos, mkRange, posCol, posLine, posOrd, rangeEnd, rangeStart)
-import GCL.Type (TypeError (..))
+import GCL.Type2.Types (TypeError (..))
 import GCL.WP.Types (StructError (..), StructWarning (..))
 import qualified Hack
 import qualified Language.LSP.Protocol.Types as LSP
@@ -261,7 +261,6 @@ applyMovesToParseError moves (SyntacticError errs logMsg) =
 applyMovesToTypeError :: [GCLMove] -> TypeError -> TypeError
 applyMovesToTypeError moves (NotInScope n) = NotInScope (shiftName moves n)
 applyMovesToTypeError moves (UnifyFailed t1 t2 mr) = UnifyFailed t1 t2 (shiftMaybeRangeOrFreeze moves mr)
-applyMovesToTypeError moves (KindUnifyFailed k1 k2 mr) = KindUnifyFailed k1 k2 (shiftMaybeRangeOrFreeze moves mr)
 applyMovesToTypeError moves (RecursiveType n t mr) = RecursiveType n t (shiftMaybeRangeOrFreeze moves mr)
 applyMovesToTypeError moves (AssignToConst n) = AssignToConst (shiftName moves n)
 applyMovesToTypeError moves (UndefinedType n) = UndefinedType (shiftName moves n)

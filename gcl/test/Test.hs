@@ -9,6 +9,7 @@ import Test.Tasty
     defaultMain,
     testGroup,
   )
+import qualified Test.Type as Type
 
 main :: IO ()
 main = do
@@ -26,5 +27,6 @@ tests =
       OrigCoord.tests,
       Parser.tests,
       Render.tests,
-      SrcLoc.tests
+      SrcLoc.tests,
+      Type.tests
     ]

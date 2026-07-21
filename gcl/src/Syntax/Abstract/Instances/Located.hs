@@ -52,7 +52,6 @@ instance MaybeRanged Type where
   maybeRangeOf (TBase _ l) = l
   maybeRangeOf (TArray _ _ l) = l
   maybeRangeOf (TTuple _) = Nothing
-  maybeRangeOf (TFunc _ _ l) = l
   maybeRangeOf (TOp op) = maybeRangeOf op
   maybeRangeOf (TData _ l) = l
   maybeRangeOf (TApp _ _ l) = l

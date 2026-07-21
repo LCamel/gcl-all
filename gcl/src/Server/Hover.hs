@@ -67,7 +67,6 @@ unkind :: KindedType -> Type
 unkind (Typed.TBase base _ loc) = UnTyped.TBase base loc
 unkind (Typed.TArray int ty loc) = UnTyped.TArray int (unkind ty) loc
 unkind (Typed.TTuple ts) = UnTyped.TTuple (map unkind ts)
-unkind (Typed.TFunc ty1 ty2 loc) = UnTyped.TFunc (unkind ty1) (unkind ty2) loc
 unkind (Typed.TOp op _) = UnTyped.TOp op
 unkind (Typed.TData name _ loc) = UnTyped.TData name loc
 unkind (Typed.TApp ty1 ty2 loc) = UnTyped.TApp (unkind ty1) (unkind ty2) loc
@@ -91,7 +90,6 @@ instance Collect Typed.KindedType where
   collect (Typed.TBase _base kind loc) = annotateKind loc kind
   collect (Typed.TArray _int kinded _loc) = collect kinded
   collect (Typed.TTuple ts) = collect ts
-  collect (Typed.TFunc l r _) = collect l <> collect r
   collect (Typed.TOp op kind) = annotateKind op kind
   collect (Typed.TData name kind _) = annotateKind name kind
   collect (Typed.TApp ty1 ty2 _) = collect ty1 <> collect ty2
@@ -181,7 +179,6 @@ instance Collect Type (J.Hover, Type) Type where
     TBase _ _    -> return ()
     TArray i x _ -> collect i >> collect x
     TTuple xs    -> mapM_ collect xs
-    TFunc x y _  -> collect x >> collect y
     TCon  x _ _  -> collect x
     TVar _ _     -> return ()
     TMetaVar _   -> return ()

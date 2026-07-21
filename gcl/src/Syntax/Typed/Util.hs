@@ -50,8 +50,7 @@ typeOf (Op _ t) = t
 -- the leftmost seed nested inside it. A complete chain therefore has type Bool.
 typeOf (Chain _) = A.TBase A.TBool Nothing
 typeOf (App f _ _) = codomain (typeOf f)
-typeOf (Lam _ t e _) =
-  A.TApp (A.TApp (A.TOp (Arrow Nothing)) t Nothing) (typeOf e) Nothing
+typeOf (Lam _ t e _) = A.mkArrowType t (typeOf e)
 typeOf (Tuple es) = A.TTuple (map typeOf es)
 typeOf (OutT i e) = component i (typeOf e)
 typeOf (Quant _ _ _ body _) = typeOf body
@@ -62,14 +61,12 @@ typeOf (Case _ (CaseClause _ e : _) _) = typeOf e
 typeOf (Subst e _) = typeOf e
 typeOf (EHole h) = typeOfHole h
 
--- | Codomain of a function/array type. Arrays are @Int -> element@, and a
---   function type appears either as @TFunc@ or as the Arrow-application form
---   inference produces -- all three peel one argument. Receiving any other
---   type here violates the typed-AST invariant.
---   codomain (Int -> Bool)       = Bool   -- TFunc or Arrow-app encoding
+-- | Codomain of a function/array type. Arrays are @Int -> element@, while a
+--   function type uses the Arrow-application form. Both peel one argument.
+--   Receiving any other type here violates the typed-AST invariant.
+--   codomain (Int -> Bool)       = Bool   -- Arrow-app encoding
 --   codomain (Array Int of Bool) = Bool   -- TArray
 codomain :: Type -> Type
-codomain (A.TFunc _ t _) = t
 codomain (A.TApp (A.TApp (A.TOp (Arrow _)) _ _) t _) = t
 codomain (A.TArray _ t _) = t
 codomain _ = error "codomain: expected a function or array type in a typed expression"

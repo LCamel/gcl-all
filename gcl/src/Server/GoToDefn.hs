@@ -257,7 +257,6 @@ instance Collect TargetRanges OriginTargetRanges Type where
     TBase _ _ -> return ()
     TArray i x _ -> collect i >> collect x
     TTuple _ -> return ()
-    TFunc l r _ -> collect l >> collect r
     TOp _ -> return ()
     TData n _ -> collect n
     TApp x y _ -> collect x >> collect y

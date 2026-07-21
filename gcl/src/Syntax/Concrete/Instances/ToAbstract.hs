@@ -278,7 +278,6 @@ instance ToAbstract Type A.Type where
         A.TBase a' _ -> return $ A.TBase a' (maybeRangeOf t)
         A.TArray a' b' _ -> return $ A.TArray a' b' (maybeRangeOf t)
         A.TTuple as' -> return $ A.TTuple as'
-        A.TFunc a' b' _ -> return $ A.TFunc a' b' (maybeRangeOf t)
         A.TOp op -> return $ A.TOp op
         A.TData name _ -> return $ A.TData name (maybeRangeOf t)
         A.TApp a' b' _ -> return $ A.TApp a' b' (maybeRangeOf t)

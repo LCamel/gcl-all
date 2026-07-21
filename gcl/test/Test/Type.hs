@@ -2,10 +2,10 @@
 
 module Test.Type (tests) where
 
+import qualified Data.Map as Map
 import GCL.Range (mkPos, mkRange)
 import GCL.Type2.Subst (applySubst)
 import GCL.Type2.Types (typeToType)
-import qualified Data.Map as Map
 import Pretty (toText)
 import qualified Syntax.Abstract.Operator as AO
 import qualified Syntax.Abstract.Types as A

@@ -4,12 +4,12 @@ import qualified Test.OrigCoord as OrigCoord
 import qualified Test.Parser as Parser
 import qualified Test.Render as Render
 import qualified Test.SrcLoc as SrcLoc
-import qualified Test.Type as Type
 import Test.Tasty
   ( TestTree,
     defaultMain,
     testGroup,
   )
+import qualified Test.Type as Type
 
 main :: IO ()
 main = do

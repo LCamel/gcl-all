@@ -12,7 +12,7 @@ import Data.Map (Map, elemAt, elems, insert, insertWith, lookup, lookupIndex, me
 import Data.Set (Set, elemAt, insert, lookupIndex, member, singleton, toList, union)
 import GCL.Common (Free (freeVars))
 import GCL.Range (Range)
-import GCL.Type (TypeError (DuplicatedIdentifiers, NotInScope))
+import GCL.Type2.Types (TypeError (..))
 import Syntax.Abstract as A
 import Syntax.Common as C
 

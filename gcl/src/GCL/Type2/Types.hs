@@ -52,7 +52,7 @@ import Control.Monad.RWS
 import Data.Map (Map)
 import Data.Text (pack)
 import GCL.Common (Counterous (..), Fresh (..))
-import GCL.Range (Range)
+import GCL.Range (MaybeRanged (..), Range)
 import GHC.Generics (Generic)
 import qualified Syntax.Abstract.Types as A
 import Syntax.Common.Types (Name (Name))
@@ -69,6 +69,18 @@ data TypeError
   | MissingArguments [Name]
   | PatternArityMismatch {- Expected -} Int {- Actual -} Int (Maybe Range)
   deriving (Show, Eq, Generic)
+
+instance MaybeRanged TypeError where
+  maybeRangeOf (NotInScope n) = maybeRangeOf n
+  maybeRangeOf (UnifyFailed _ _ l) = l
+  maybeRangeOf (RecursiveType _ _ l) = l
+  maybeRangeOf (AssignToConst n) = maybeRangeOf n
+  maybeRangeOf (UndefinedType n) = maybeRangeOf n
+  maybeRangeOf (DuplicatedIdentifiers ns) = maybeRangeOf ns
+  maybeRangeOf (RedundantNames ns) = maybeRangeOf ns
+  maybeRangeOf (RedundantExprs exprs) = maybeRangeOf exprs
+  maybeRangeOf (MissingArguments ns) = maybeRangeOf ns
+  maybeRangeOf (PatternArityMismatch _ _ l) = l
 
 type TyVar = Name
 

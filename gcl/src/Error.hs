@@ -2,7 +2,7 @@ module Error where
 
 import GCL.Predicate (HoleError)
 import GCL.Range (Range)
-import GCL.Type (TypeError)
+import GCL.Type2.Types (TypeError)
 import GCL.WP.Types (StructError)
 import Syntax.Common ()
 import Syntax.Parser.Error (ParseError)

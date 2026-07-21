@@ -14,7 +14,6 @@ import GCL.Dependency (evalDependencyResolution)
 import GCL.Range (Range, posCol, posLine, rangeEnd, rangeStart)
 import GCL.Type2.ToTyped (runToTyped)
 import qualified GCL.WP as WP
-import qualified Hack
 import Server.GoToDefn (collectLocationLinks)
 import Server.Highlighting (collectHighlighting)
 import Server.Hover (collectHoverInfo)
@@ -106,7 +105,7 @@ loadConcrete :: C.Program -> Either Error FileState
 loadConcrete concrete = do
   let abstract = C.runAbstractTransform concrete
   abstract' <- first TypeError $ evalDependencyResolution abstract
-  (elaborated, state) <- first (TypeError . Hack.toOldError) $ runToTyped abstract' mempty
+  (elaborated, state) <- first TypeError $ runToTyped abstract' mempty
   (pos, specs, holes, warnings, _redexes, idCount) <- first StructError $ WP.sweep elaborated
   return
     FileState

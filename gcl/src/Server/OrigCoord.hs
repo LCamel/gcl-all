@@ -26,7 +26,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Error (Error (..))
 import GCL.Range (Pos (Pos), Range (Range), mkPos, mkRange, posCol, posLine, rangeStart)
-import GCL.Type (TypeError (..))
+import GCL.Type2.Types (TypeError (..))
 import GCL.WP.Types (StructError (..))
 import Syntax.Common.Types (Name (..))
 import Syntax.Parser.Error (ParseError (..))
@@ -166,7 +166,6 @@ convertParseError ers (SyntacticError errs logMsg) =
 convertTypeError :: [EditRegion] -> TypeError -> TypeError
 convertTypeError ers (NotInScope n) = NotInScope (convertName ers n)
 convertTypeError ers (UnifyFailed t1 t2 mr) = UnifyFailed t1 t2 (convertMaybeRange ers mr)
-convertTypeError ers (KindUnifyFailed k1 k2 mr) = KindUnifyFailed k1 k2 (convertMaybeRange ers mr)
 convertTypeError ers (RecursiveType n t mr) = RecursiveType n t (convertMaybeRange ers mr)
 convertTypeError ers (AssignToConst n) = AssignToConst (convertName ers n)
 convertTypeError ers (UndefinedType n) = UndefinedType (convertName ers n)

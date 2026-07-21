@@ -7,7 +7,7 @@ import qualified Data.Map as Map
 import Data.Text (Text)
 import qualified Data.Text as T
 import GCL.Range (MaybeRanged (..), (<--->))
-import Syntax.Abstract.Types (TBase (TBool), Type (..))
+import Syntax.Abstract.Types (Type)
 import qualified Syntax.Abstract.Types as A
 import Syntax.Common (Name (..), nameToText)
 import Syntax.Common.Types (TypeOp (..))
@@ -35,37 +35,51 @@ declaredNamesTypes decls = concat . map extractNames $ decls
     extractNames (ConstDecl ns t _ _) = [(n, t) | n <- ns]
     extractNames (VarDecl ns t _ _) = [(n, t) | n <- ns]
 
+-- | An expression's type, reconstructed from a well-typed AST. Deriving the
+--   real type -- rather than reading a stored annotation -- is what makes
+--   projections correct at any nesting depth: @a[i][j]@ peels 'codomain'
+--   twice, so an @array of array of (Int -> Int)@ still reports a function.
+--   A shape for which no type can be reconstructed is an internal invariant
+--   violation, not a normal result of querying a typed expression.
 typeOf :: Expr -> Type
 typeOf (Lit _ t _) = t
 typeOf (Var _ t _) = t
 typeOf (Const _ t _) = t
 typeOf (Op _ t) = t
-typeOf (Chain ch) = typeOfChain ch
-typeOf (App e0 _ _) = case typeOf e0 of
-  A.TApp (A.TApp (A.TOp (Arrow _)) _t1 _) t2 _ -> t2
-  _ -> error "left term not having function type in a typed expression"
-typeOf (Lam _ t0 e _) = A.TFunc t0 (typeOf e) Nothing
+-- A type-checked chain always has 'More' at its root; 'Pure' appears only as
+-- the leftmost seed nested inside it. A complete chain therefore has type Bool.
+typeOf (Chain _) = A.TBase A.TBool Nothing
+typeOf (App f _ _) = codomain (typeOf f)
+typeOf (Lam _ t e _) =
+  A.TApp (A.TApp (A.TOp (Arrow Nothing)) t Nothing) (typeOf e) Nothing
 typeOf (Tuple es) = A.TTuple (map typeOf es)
-typeOf (OutT i e) = case typeOf e of
-  A.TTuple ts ->
-    if i < length ts
-      then ts !! i
-      else error "tuple too short"
-  _ -> error "outT applied a non-tuple"
+typeOf (OutT i e) = component i (typeOf e)
 typeOf (Quant _ _ _ body _) = typeOf body
-typeOf (ArrIdx arr _ _) = case typeOf arr of
-  A.TArray _ t _ -> t
-  A.TFunc _ t _ -> t
-  _ -> error "indexed term not an array in a typed expression "
+typeOf (ArrIdx arr _ _) = codomain (typeOf arr)
 typeOf (ArrUpd arr _ _ _) = typeOf arr
-typeOf (Case _ [] _) = error "caseless case"
+typeOf (Case _ [] _) = error "typeOf: empty case in a typed expression"
 typeOf (Case _ (CaseClause _ e : _) _) = typeOf e
 typeOf (Subst e _) = typeOf e
 typeOf (EHole h) = typeOfHole h
 
-typeOfChain :: Chain -> Type
-typeOfChain (Pure e) = typeOf e -- SCM: shouldn't happen?
-typeOfChain (More _ _ _ _) = A.TBase TBool Nothing
+-- | Codomain of a function/array type. Arrays are @Int -> element@, and a
+--   function type appears either as @TFunc@ or as the Arrow-application form
+--   inference produces -- all three peel one argument. Receiving any other
+--   type here violates the typed-AST invariant.
+--   codomain (Int -> Bool)       = Bool   -- TFunc or Arrow-app encoding
+--   codomain (Array Int of Bool) = Bool   -- TArray
+codomain :: Type -> Type
+codomain (A.TFunc _ t _) = t
+codomain (A.TApp (A.TApp (A.TOp (Arrow _)) _ _) t _) = t
+codomain (A.TArray _ t _) = t
+codomain _ = error "codomain: expected a function or array type in a typed expression"
+
+-- | i-th component of a tuple type.
+component :: Int -> Type -> Type
+component i (A.TTuple ts)
+  | 0 <= i && i < length ts = ts !! i
+  | otherwise = error "component: tuple index out of bounds in a typed expression"
+component _ _ = error "component: expected a tuple type in a typed expression"
 
 typeOfHole :: Hole -> Type
 typeOfHole (Hole _ _ t _ _) = t

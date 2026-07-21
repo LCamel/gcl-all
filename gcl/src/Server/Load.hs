@@ -105,7 +105,7 @@ loadAndDig filePath source = do
 loadConcrete :: C.Program -> Either Error FileState
 loadConcrete concrete = do
   let abstract = C.runAbstractTransform concrete
-  abstract' <- first TypeError $ evalDependencyResolution abstract
+  abstract' <- first (TypeError . Hack.toOldError) (evalDependencyResolution abstract)
   (elaborated, state) <- first (TypeError . Hack.toOldError) $ runToTyped abstract' mempty
   (pos, specs, holes, warnings, _redexes, idCount) <- first StructError $ WP.sweep elaborated
   return

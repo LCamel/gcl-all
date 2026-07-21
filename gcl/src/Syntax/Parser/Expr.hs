@@ -63,6 +63,8 @@ expression = do
         [ InfixL $ arithOp Max TokMax,
           InfixL $ arithOp Min TokMin
         ],
+        [ InfixN $ arithOp PointsTo TokPointsTo
+        ],
         -- =
         [ InfixL $ chainOp EQ TokEQ,
           -- ~, <, <=, >, >=
@@ -80,14 +82,16 @@ expression = do
           InfixL $ arithOp ConjU TokConjU,
           --- ||
           InfixL $ arithOp Disj TokDisj,
-          InfixL $ arithOp DisjU TokDisjU
+          InfixL $ arithOp DisjU TokDisjU,
+          InfixL $ arithOp SConj TokSConj
         ],
         -- =>
         [ InfixR $ arithOp Implies TokImpl,
           InfixR $ arithOp ImpliesU TokImplU,
           -- <=>
           InfixL $ chainOp EQProp TokEQProp,
-          InfixL $ chainOp EQPropU TokEQPropU
+          InfixL $ chainOp EQPropU TokEQPropU,
+          InfixR $ arithOp SImp TokLolipop
         ]
       ]
       where

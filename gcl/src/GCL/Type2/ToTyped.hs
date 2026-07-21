@@ -15,6 +15,7 @@ import Data.List (foldl', nub)
 import qualified Data.Map as Map
 import Data.Text (pack)
 import Debug.Trace
+import GCL.Dependency (evalDependencyResolution)
 import qualified GCL.Dependency as D
 import GCL.Range (MaybeRanged (maybeRangeOf), Range)
 import GCL.Type2.Infer (checkDuplicateNames, infer, instantiate, typeCheck, typeToKind)
@@ -254,7 +255,7 @@ instance ToTyped D.Program T.Program where
         defns
 
     let newEnv = defnEnv <> declEnv
-    traceM $ show newEnv
+    traceM $ "env:\n" <> show newEnv
 
     typedDecls <- local (const newEnv) (mapM toTyped decls)
     typedExprs <- local (const newEnv) (mapM toTyped exprs)
@@ -285,7 +286,9 @@ instance ToTyped A.Stmt T.Stmt where
   toTyped (A.HLookup name expr range) = toTypedHLookup name expr range
   toTyped (A.HMutate left right range) = toTypedHMutate left right range
   toTyped (A.Dispose expr range) = toTypedDispose expr range
-  toTyped A.Block {} = undefined
+  toTyped (A.Block program range) = do
+    program' <- lift $ evalDependencyResolution program
+    T.Block <$> toTyped program' <*> pure range
 
 toTypedAssign :: [Either Name A.Hole] -> [A.Expr] -> Maybe Range -> TIMonad T.Stmt
 toTypedAssign names exprs range

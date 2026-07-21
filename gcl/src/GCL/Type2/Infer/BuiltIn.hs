@@ -24,7 +24,7 @@ getArithOpType Max {} = return (typeInt `typeToType` typeInt `typeToType` typeIn
 getArithOpType Min {} = return (typeInt `typeToType` typeInt `typeToType` typeInt)
 getArithOpType Exp {} = return (typeInt `typeToType` typeInt `typeToType` typeInt)
 getArithOpType Hash {} = return (typeBool `typeToType` typeInt)
-getArithOpType PointsTo {} = return (typeInt `typeToType` typeInt `typeToType` typeInt)
+getArithOpType PointsTo {} = return (typeInt `typeToType` typeInt `typeToType` typeBool)
 getArithOpType SConj {} = return (typeBool `typeToType` typeBool `typeToType` typeBool)
 getArithOpType SImp {} = return (typeBool `typeToType` typeBool `typeToType` typeBool)
 

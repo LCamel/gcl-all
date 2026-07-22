@@ -4,5 +4,6 @@
 }
 
 .gcl-redex:hover:not(:has(.gcl-redex:hover)) {
-  color: white;
+  color: var(--vscode-textLink-activeForeground);
+  font-weight: bold;
 }

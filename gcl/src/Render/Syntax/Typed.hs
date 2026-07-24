@@ -15,7 +15,8 @@ import Syntax.Common
   )
 import Syntax.Typed
 import Syntax.Typed.Reduce
-  ( RZ,
+  ( Env,
+    RZ,
     currentPath,
     descend,
     initRZ,
@@ -107,22 +108,22 @@ handleExpr n (Subst e subs) =
 -- | Render an Expr to Inlines, threading the redexRT zipper so that redex
 -- nodes get wrapped (via `redexE`) with their path. Layout mirrors
 -- `handleExpr` exactly; the only addition is the per-node redex marking.
-renderExprRZ :: Expr -> Inlines
-renderExprRZ e = handleExprRZ NoContext (initRZ [] (redexRT_sat e)) e
+renderExprRZ :: Env -> Expr -> Inlines
+renderExprRZ env e = handleExprRZ NoContext (initRZ [] (redexRT_sat env e)) e
 
 -- | Render a PO predicate. When the top-level operator is `⇒`, break it onto
 -- two lines (`P ⇒` / `Q`); otherwise fall back to `renderExprRZ`. The zipper
 -- paths mirror the binary-operator case in `handleExprRZ` so redex marking
 -- stays consistent.
-renderPOPredRZ :: Expr -> Inlines
-renderPOPredRZ e@(App (App (Op (ArithOp op@(ImpliesU _)) _) left _) right _) =
-  let rz = initRZ [] (redexRT_sat e)
+renderPOPredRZ :: Env -> Expr -> Inlines
+renderPOPredRZ env e@(App (App (Op (ArithOp op@(ImpliesU _)) _) left _) right _) =
+  let rz = initRZ [] (redexRT_sat env e)
    in markRedex rz $
         vertE
           [ handleExprRZ (HOLEOp (ArithOp op)) (down (down rz 0) 1) left <+> render op,
             handleExprRZ (OpHOLE (ArithOp op)) (down rz 1) right
           ]
-renderPOPredRZ e = renderExprRZ e
+renderPOPredRZ env e = renderExprRZ env e
 
 -- | Wrap with a redex marker iff the current zipper node is a redex.
 markRedex :: RZ -> Inlines -> Inlines

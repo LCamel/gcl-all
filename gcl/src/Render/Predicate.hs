@@ -83,7 +83,7 @@ instance RenderSection PO where
           anchorHash
           anchorLoc
       ]
-        <> [Code (renderPOPredRZ reducedPredicate)]
+        <> [Code (renderPOPredRZ [] reducedPredicate)]
         <> explanation
     where
       explanation = case origin of

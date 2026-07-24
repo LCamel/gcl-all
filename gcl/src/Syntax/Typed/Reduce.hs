@@ -2,7 +2,7 @@ module Syntax.Typed.Reduce where
 
 import Control.Arrow ((***))
 import GCL.Common (Fresh (..))
-import Syntax.Abstract.Types (Pattern (..))
+import Syntax.Abstract.Types (Pattern (..), extractBinder)
 import Syntax.Common.Types (Name, nameToText)
 import Syntax.Substitution
 import Syntax.Typed.Instances.Substitution ()
@@ -53,34 +53,36 @@ type RT = RTree Bool
 leaf :: RT
 leaf = Node False []
 
-redexRT :: Expr -> RT
-redexRT (Lit _ _ _) = leaf
-redexRT (Var _ _ _) = leaf
-redexRT (Const _ _ _) = leaf
-redexRT (Op _ _) = leaf
-redexRT (Chain ch) = Node False (redexRTChain ch)
-redexRT (App f@(Lam _ _ _ _) e _) = Node True [redexRT f, redexRT e]
-redexRT (App (Var _ _ _) e _) = Node True [leaf, redexRT e]
-redexRT (App f e _) = Node False [redexRT f, redexRT e]
-redexRT (Lam _ _ e _) = Node False [redexRT e]
-redexRT (Tuple es) = Node False (map redexRT es)
-redexRT (OutT _ t@(Tuple _)) = Node True [redexRT t]
-redexRT (OutT _ e) = Node False [redexRT e]
-redexRT (Quant _ _ r b _) = Node False [redexRT r, redexRT b]
-redexRT (ArrIdx a i _) = Node False [redexRT a, redexRT i]
-redexRT (ArrUpd a i e _) =
-  Node False [redexRT a, redexRT i, redexRT e]
-redexRT (Case e cls _) =
-  Node True (redexRT e : map (redexRT . getClause) cls)
+redexRT :: Env -> Expr -> RT
+redexRT _env (Lit _ _ _) = leaf
+redexRT _env (Var _ _ _) = leaf
+redexRT _env (Const _ _ _) = leaf
+redexRT _env (Op _ _) = leaf
+redexRT env (Chain ch) = Node False (redexRTChain env ch)
+redexRT env (App f@(Lam _ _ _ _) e _) = Node True [redexRT env f, redexRT env e]
+redexRT env (App v@(Var f _ _) e _) = Node (isDefined env f) [redexRT env v, redexRT env e]
+redexRT env (App f e _) = Node False [redexRT env f, redexRT env e]
+redexRT env (Lam x _ e _) = Node False [redexRT (shadowDefinitions [x] env) e]
+redexRT env (Tuple es) = Node False (map (redexRT env) es)
+redexRT env (OutT _ t@(Tuple _)) = Node True [redexRT env t]
+redexRT env (OutT _ e) = Node False [redexRT env e]
+redexRT env (Quant _ xs r b _) = Node False [redexRT env' r, redexRT env' b]
   where
-    getClause (CaseClause _ e) = e
-redexRT (Subst e sb) =
-  Node True (redexRT e : map (redexRT . snd) sb)
-redexRT (EHole {}) = leaf
+    env' = shadowDefinitions (map fst xs) env
+redexRT env (ArrIdx a i _) = Node False [redexRT env a, redexRT env i]
+redexRT env (ArrUpd a i e _) =
+  Node False [redexRT env a, redexRT env i, redexRT env e]
+redexRT env (Case e cls _) =
+  Node True (redexRT env e : map redexClause cls)
+  where
+    redexClause (CaseClause pattern' rhs) = redexRT (shadowDefinitions (extractBinder pattern') env) rhs
+redexRT env (Subst e sb) =
+  Node True (redexRT env e : map (redexRT env . snd) sb)
+redexRT _env (EHole {}) = leaf
 
-redexRTChain :: Chain -> [RT]
-redexRTChain (Pure e) = [redexRT e]
-redexRTChain (More ch _ _ e) = redexRT e : redexRTChain ch
+redexRTChain :: Env -> Chain -> [RT]
+redexRTChain env (Pure e) = [redexRT env e]
+redexRTChain env (More ch _ _ e) = redexRT env e : redexRTChain env ch
 
 -- Saturated-redex marking (redexRT_sat) --------------------------------------
 --
@@ -91,32 +93,34 @@ redexRTChain (More ch _ _ e) = redexRT e : redexRTChain ch
 -- constructor mirrors redexRT exactly, so the tree shape -- and hence the
 -- render zipper paths -- is identical.
 
-redexRT_sat :: Expr -> RT
-redexRT_sat (Lit _ _ _) = leaf
-redexRT_sat (Var _ _ _) = leaf
-redexRT_sat (Const _ _ _) = leaf
-redexRT_sat (Op _ _) = leaf
-redexRT_sat (Chain ch) = Node False (redexRTChain_sat ch)
-redexRT_sat e@(App f a _) = Node (saturatedRedex e) [redexRT_sat f, redexRT_sat a]
-redexRT_sat (Lam _ _ e _) = Node False [redexRT_sat e]
-redexRT_sat (Tuple es) = Node False (map redexRT_sat es)
-redexRT_sat (OutT _ t@(Tuple _)) = Node True [redexRT_sat t]
-redexRT_sat (OutT _ e) = Node False [redexRT_sat e]
-redexRT_sat (Quant _ _ r b _) = Node False [redexRT_sat r, redexRT_sat b]
-redexRT_sat (ArrIdx a i _) = Node False [redexRT_sat a, redexRT_sat i]
-redexRT_sat (ArrUpd a i e _) =
-  Node False [redexRT_sat a, redexRT_sat i, redexRT_sat e]
-redexRT_sat (Case e cls _) =
-  Node True (redexRT_sat e : map (redexRT_sat . getClause) cls)
+redexRT_sat :: Env -> Expr -> RT
+redexRT_sat _env (Lit _ _ _) = leaf
+redexRT_sat _env (Var _ _ _) = leaf
+redexRT_sat _env (Const _ _ _) = leaf
+redexRT_sat _env (Op _ _) = leaf
+redexRT_sat env (Chain ch) = Node False (redexRTChain_sat env ch)
+redexRT_sat env e@(App f a _) = Node (saturatedDefinitionRedex env e) [redexRT_sat env f, redexRT_sat env a]
+redexRT_sat env (Lam x _ e _) = Node False [redexRT_sat (shadowDefinitions [x] env) e]
+redexRT_sat env (Tuple es) = Node False (map (redexRT_sat env) es)
+redexRT_sat env (OutT _ t@(Tuple _)) = Node True [redexRT_sat env t]
+redexRT_sat env (OutT _ e) = Node False [redexRT_sat env e]
+redexRT_sat env (Quant _ xs r b _) = Node False [redexRT_sat env' r, redexRT_sat env' b]
   where
-    getClause (CaseClause _ e) = e
-redexRT_sat (Subst e sb) =
-  Node True (redexRT_sat e : map (redexRT_sat . snd) sb)
-redexRT_sat (EHole {}) = leaf
+    env' = shadowDefinitions (map fst xs) env
+redexRT_sat env (ArrIdx a i _) = Node False [redexRT_sat env a, redexRT_sat env i]
+redexRT_sat env (ArrUpd a i e _) =
+  Node False [redexRT_sat env a, redexRT_sat env i, redexRT_sat env e]
+redexRT_sat env (Case e cls _) =
+  Node True (redexRT_sat env e : map redexClause cls)
+  where
+    redexClause (CaseClause pattern' rhs) = redexRT_sat (shadowDefinitions (extractBinder pattern') env) rhs
+redexRT_sat env (Subst e sb) =
+  Node True (redexRT_sat env e : map (redexRT_sat env . snd) sb)
+redexRT_sat _env (EHole {}) = leaf
 
-redexRTChain_sat :: Chain -> [RT]
-redexRTChain_sat (Pure e) = [redexRT_sat e]
-redexRTChain_sat (More ch _ _ e) = redexRT_sat e : redexRTChain_sat ch
+redexRTChain_sat :: Env -> Chain -> [RT]
+redexRTChain_sat env (Pure e) = [redexRT_sat env e]
+redexRTChain_sat env (More ch _ _ e) = redexRT_sat env e : redexRTChain_sat env ch
 
 -- counting from the rightmost expression
 -- simply because it makes things easier.
@@ -139,6 +143,29 @@ descend (p, Node _ ts) = zipWith (\i t -> (i : p, t)) [0 ..] ts
 
 type Env = [(Name, Expr)]
 
+-- A lexical binder with the same name as a global definition hides that
+-- definition while traversing the binder's scope.
+shadowDefinitions :: [Name] -> Env -> Env
+shadowDefinitions names =
+  filter (\(name, _) -> name `notElem` names)
+
+isDefined :: Env -> Name -> Bool
+isDefined env name =
+  case lookup name env of
+    Just _ -> True
+    Nothing -> False
+
+saturatedDefinitionRedex :: Env -> Expr -> Bool
+saturatedDefinitionRedex env expr =
+  saturatedRedex expr
+    && case applicationHead expr of
+      Var name _ _ -> isDefined env name
+      Lam {} -> True
+      _ -> False
+  where
+    applicationHead (App function _ _) = applicationHead function
+    applicationHead e = e
+
 reduce :: (Fresh m) => Env -> Expr -> Redex -> m Expr
 reduce env (Chain ch) (i : p) = Chain <$> reduceChain env ch i p
 reduce _env (App (Lam x _ bdy _) e _) [] = betaReduce x bdy e
@@ -160,14 +187,18 @@ reduce env exp@(App f e r) []
   | otherwise = return exp
 reduce env (App f e r) (0 : p) = App <$> reduce env f p <*> pure e <*> pure r
 reduce env (App f e r) (1 : p) = App f <$> reduce env e p <*> pure r
-reduce env (Lam x t e r) (0 : p) = Lam x t <$> reduce env e p <*> pure r
+reduce env (Lam x t e r) (0 : p) = Lam x t <$> reduce (shadowDefinitions [x] env) e p <*> pure r
 reduce env (Tuple es) (n : p) = Tuple <$> reduceNth env n es p
 reduce _env (OutT i (Tuple es)) [] = return (es !! i)
 reduce env (OutT i e) (0 : p) = OutT i <$> reduce env e p
 reduce env (Quant op xs ran bdy r) (0 : p) =
-  Quant op xs <$> reduce env ran p <*> pure bdy <*> pure r
+  Quant op xs <$> reduce env' ran p <*> pure bdy <*> pure r
+  where
+    env' = shadowDefinitions (map fst xs) env
 reduce env (Quant op xs ran bdy r) (1 : p) =
-  Quant op xs ran <$> reduce env bdy p <*> pure r
+  Quant op xs ran <$> reduce env' bdy p <*> pure r
+  where
+    env' = shadowDefinitions (map fst xs) env
 reduce env (ArrIdx a i r) (0 : p) = ArrIdx <$> reduce env a p <*> pure i <*> pure r
 reduce env (ArrIdx a i r) (1 : p) = ArrIdx a <$> reduce env i p <*> pure r
 reduce env (ArrUpd a i e r) (0 : p) =
@@ -179,12 +210,7 @@ reduce env expr@(Case e cls _) [] =
 reduce env (Case e cls r) (0 : p) =
   Case <$> reduce env e p <*> pure cls <*> pure r
 reduce env (Case e cls r) (n : p) =
-  (Case e . zipWith CaseClause (map getPattern cls))
-    <$> reduceNth env (n - 1) (map getClause cls) p
-    <*> pure r
-  where
-    getPattern (CaseClause p _) = p
-    getClause (CaseClause _ e) = e
+  Case e <$> reduceNthCaseClause env (n - 1) cls p <*> pure r
 reduce _env (Subst e sb) [] = subst (map (nameToText *** id) sb) e
 reduce env (Subst e sb) (0 : p) = Subst <$> reduce env e p <*> pure sb
 reduce env (Subst e sb) (n : p) =
@@ -196,6 +222,14 @@ reduceNth :: (Fresh m) => Env -> Int -> [Expr] -> Redex -> m [Expr]
 reduceNth _ _ [] _ = error "shouldn't happen"
 reduceNth env 0 (e : es) p = (: es) <$> reduce env e p
 reduceNth env n (e : es) p = (e :) <$> reduceNth env (n - 1) es p
+
+reduceNthCaseClause :: (Fresh m) => Env -> Int -> [CaseClause] -> Redex -> m [CaseClause]
+reduceNthCaseClause _ _ [] _ = error "shouldn't happen"
+reduceNthCaseClause env 0 (CaseClause pattern' rhs : clauses) path =
+  (\rhs' -> CaseClause pattern' rhs' : clauses)
+    <$> reduce (shadowDefinitions (extractBinder pattern') env) rhs path
+reduceNthCaseClause env n (clause : clauses) path =
+  (clause :) <$> reduceNthCaseClause env (n - 1) clauses path
 
 betaReduce :: (Fresh m) => Name -> Expr -> Expr -> m Expr
 betaReduce x bdy e = subst [(nameToText x, e)] bdy

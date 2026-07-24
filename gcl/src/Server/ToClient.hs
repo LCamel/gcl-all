@@ -40,6 +40,7 @@ import qualified Server.Monad as Server
 import Server.SrcLoc (toLSPPosition, toLSPRange)
 import qualified Syntax.Common as Common
 import qualified Syntax.Parser.Error as Parse
+import Syntax.Typed.Reduce (Env)
 
 -- | Client-facing payload for gcl/update notification.
 -- Produced by the server after trimming internal fields (semantic tokens,
@@ -112,7 +113,7 @@ toClientFileState fs =
     { errors = map convertError (Server.fsErrors fs),
       specs = map convertSpec (Server.fsSpecifications fs),
       holes = map convertHole (Server.fsHoles fs),
-      pos = zipWith convertPO [0 ..] (Server.fsProofObligations fs),
+      pos = zipWith (convertPO (Server.fsDefinitions fs)) [0 ..] (Server.fsProofObligations fs),
       warnings = map convertWarning (Server.fsWarnings fs)
     }
 
@@ -135,11 +136,11 @@ convertHole (GCL.Hole {GCL.holeID, GCL.holeType, GCL.holeRange}) =
     }
 
 -- | Convert server-side PO to client-side ProofObligation
-convertPO :: Int -> GCL.PO -> ProofObligation
-convertPO poIndex (GCL.PO {GCL.poPred, GCL.poReducedPred, GCL.poAnchorHash, GCL.poAnchorRange, GCL.poOrigin}) =
+convertPO :: Env -> Int -> GCL.PO -> ProofObligation
+convertPO env poIndex (GCL.PO {GCL.poPred, GCL.poReducedPred, GCL.poAnchorHash, GCL.poAnchorRange, GCL.poOrigin}) =
   ProofObligation
-    { pred = renderPredHtml poIndex poPred,
-      reducedPred = renderPredHtml poIndex poReducedPred,
+    { pred = renderPredHtml env poIndex poPred,
+      reducedPred = renderPredHtml env poIndex poReducedPred,
       hash = Text.unpack poAnchorHash,
       proofLocation = fmap toLSPRange poAnchorRange,
       origin = convertOrigin poOrigin
@@ -148,12 +149,12 @@ convertPO poIndex (GCL.PO {GCL.poPred, GCL.poReducedPred, GCL.poAnchorHash, GCL.
 -- | Render a Pred (Expr) to an HTML fragment wrapped in <span class="gcl-expr">.
 -- The wrapper carries data-po (PO index) so a clicked redex can be traced back
 -- to its PO; redex nodes carry data-redex (the path within this Expr).
-renderPredHtml :: Int -> GCL.Pred -> Text.Text
-renderPredHtml poIndex e =
+renderPredHtml :: Env -> Int -> GCL.Pred -> Text.Text
+renderPredHtml env poIndex e =
   "<span class=\"gcl-expr\" data-po=\""
     <> Text.pack (show poIndex)
     <> "\">"
-    <> inlinesToHtml (renderPOPredRZ e)
+    <> inlinesToHtml (renderPOPredRZ env e)
     <> "</span>"
 
 -- | Convert server-side Origin to client-side POOrigin

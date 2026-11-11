@@ -10,7 +10,7 @@ import GHC.Generics (Generic)
 import Server.Monad (ServerM)
 import Server.Reduce (reduce)
 import Server.Reduce.Types (ReduceTarget (..))
-import Syntax.Typed.Reduce4 (RedexPath)
+import Syntax.Typed.Reduce5 (RedexPath)
 
 data ReduceParams = ReduceParams
   { filePath :: FilePath,

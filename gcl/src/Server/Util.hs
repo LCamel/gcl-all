@@ -11,7 +11,7 @@ import Language.LSP.Server (getConfig)
 import Server.Config (Config (..))
 import Server.FileState (FileState (..))
 import Server.Monad (ServerM, logText)
-import Syntax.Typed.Reduce4 (reduceAll)
+import Syntax.Typed.Reduce5 (reduceAll)
 
 evalSMTProofs :: FileState -> ServerM FileState
 evalSMTProofs fs = do

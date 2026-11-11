@@ -126,12 +126,14 @@ library
       Syntax.Typed.Instances.Free
       Syntax.Typed.Instances.Located
       Syntax.Typed.Instances.Substitution
+      Syntax.Typed.LocallyNameless
       Syntax.Typed.Operator
       Syntax.Typed.Reduce
       Syntax.Typed.Reduce.Saturation
       Syntax.Typed.Reduce2
       Syntax.Typed.Reduce3
       Syntax.Typed.Reduce4
+      Syntax.Typed.Reduce5
       Syntax.Typed.Structure
       Syntax.Typed.Subst2
       Syntax.Typed.Subst3
@@ -201,15 +203,19 @@ test-suite gcl-test
   main-is: Test.hs
   other-modules:
       Test.Config
+      Test.LocallyNameless
       Test.Move
       Test.OrigCoord
       Test.Parser
       Test.Reduce
+      Test.Reduce.Contract
       Test.Reduce.Steps
       Test.Reduce.Support
       Test.Reduce2
       Test.Reduce3
       Test.Reduce4
+      Test.Reduce5
+      Test.Reduce5Property
       Test.Render
       Test.ServerLineEndings
       Test.ServerReduce

@@ -1,11 +1,14 @@
 import System.IO (hSetEncoding, stderr, stdin, stdout, utf8)
 import qualified Test.Config as Config
+import qualified Test.LocallyNameless as LocallyNameless
 import qualified Test.Move as Move
 import qualified Test.OrigCoord as OrigCoord
 import qualified Test.Parser as Parser
 import qualified Test.Reduce2 as Reduce2
 import qualified Test.Reduce3 as Reduce3
 import qualified Test.Reduce4 as Reduce4
+import qualified Test.Reduce5 as Reduce5
+import qualified Test.Reduce5Property as Reduce5Property
 import qualified Test.Render as Render
 import qualified Test.ServerLineEndings as ServerLineEndings
 import qualified Test.ServerReduce as ServerReduce
@@ -35,9 +38,12 @@ tests =
       Move.tests,
       OrigCoord.tests,
       Parser.tests,
+      LocallyNameless.tests,
       Reduce2.tests,
       Reduce3.tests,
       Reduce4.tests,
+      Reduce5.tests,
+      Reduce5Property.tests,
       Render.tests,
       ServerLineEndings.tests,
       ServerReduce.tests,

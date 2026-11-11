@@ -43,7 +43,7 @@ import qualified Server.Reduce.Types as Reduce
 import Server.SrcLoc (toLSPPosition, toLSPRange)
 import qualified Syntax.Common as Common
 import qualified Syntax.Parser.Error as Parse
-import Syntax.Typed.Reduce4 (DefnEnv)
+import Syntax.Typed.Reduce5 (DefnEnv)
 
 -- | Client-facing payload for gcl/update notification.
 -- Produced by the server after trimming internal fields (semantic tokens,

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Reducer behaviour shared by implementations of tryReduceAt and redexRT.
-module Test.Reduce (tests, basicTests, programTests) where
+module Test.Reduce (tests, basicTests, programTests, everyConstructor) where
 
 import Control.Monad.State (State, evalState)
 import Data.Maybe (isJust)

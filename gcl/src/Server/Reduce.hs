@@ -3,11 +3,9 @@
 module Server.Reduce where
 
 import Control.Lens
-import Control.Monad.State (evalState)
 import Data.List (find)
 import qualified Data.Text as Text
 import Error (Error (..))
-import GCL.Common (initFreshState)
 import GCL.Spec (Spec (..))
 import GCL.WP.Types (PO (..))
 import Pretty.Error ()
@@ -24,12 +22,11 @@ import Server.Monad
 import Server.Notification.Update (setAndSendFileState)
 import Server.Reduce.Types (ReduceTarget (..))
 import Syntax.Common.Types (Name)
-import Syntax.Typed.Reduce4 (DefnEnv, RedexPath, tryReduceAt)
+import Syntax.Typed.Reduce5 (DefnEnv, RedexPath, tryReduceAt)
 import qualified Syntax.Typed.Types as T
 
 evalReduce :: DefnEnv -> T.Expr -> RedexPath -> Maybe T.Expr
-evalReduce defnEnv predicate redex =
-  evalState (tryReduceAt defnEnv predicate redex) initFreshState
+evalReduce = tryReduceAt
 
 -- | Apply one display reduction without changing the source-derived conditions.
 reduceFileState :: ReduceTarget -> RedexPath -> FileState -> Either [Error] FileState
